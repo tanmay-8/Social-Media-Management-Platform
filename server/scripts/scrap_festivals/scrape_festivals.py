@@ -11,6 +11,8 @@ from bs4 import BeautifulSoup
 
 
 BASE_URL = "https://kalnirnay.co.in/"
+# Change YEAR to scrape different years (2025, 2026, 2027, etc.)
+YEAR = 2026  # <<< Change this to get different year's data
 MONTH_SLUGS = [
     "january",
     "february",
@@ -25,7 +27,7 @@ MONTH_SLUGS = [
     "november",
     "december",
 ]
-OUTPUT_PATH = Path("festivals.csv")
+OUTPUT_PATH = Path(f"festivals_{YEAR}.csv")
 
 # Headers to mimic a real browser
 HEADERS = {
@@ -41,7 +43,8 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 
 def fetch_month_html(month_slug: str, retries: int = 3) -> str:
     """Fetch HTML for a month page with retry logic."""
-    url = f"{BASE_URL}{month_slug}/"
+    # Try 2026 URL format first, then fall back to default
+    url = f"{BASE_URL}/{month_slug}/"
     
     for attempt in range(retries):
         try:
@@ -52,6 +55,11 @@ def fetch_month_html(month_slug: str, retries: int = 3) -> str:
             time.sleep(1)
             return response.text
         except requests.RequestException as exc:
+            # If year-based URL fails on first attempt, try without year
+            if attempt == 0:
+                url = f"{BASE_URL}{month_slug}/"
+                logging.info("Trying alternate URL format: %s", url)
+                continue
             if attempt == retries - 1:
                 raise
             logging.warning("Attempt %d failed for %s: %s. Retrying...", attempt + 1, month_slug, exc)
@@ -160,7 +168,10 @@ def write_csv(rows: List[Dict[str, str]]) -> None:
 
 def main() -> None:
     """Main function to scrape all festivals and save to CSV."""
-    logging.info("Starting festival scraping from %s", BASE_URL)
+    logging.info("=" * 60)
+    logging.info("Starting festival scraping for YEAR: %d", YEAR)
+    logging.info("Source: %s", BASE_URL)
+    logging.info("=" * 60)
     all_rows: List[Dict[str, str]] = []
     
     successful_months = 0

@@ -1,0 +1,226 @@
+const cron = require('node-cron');
+const ScheduledPost = require('../models/ScheduledPost');
+const Festival = require('../models/Festival');
+const User = require('../models/User');
+const { composeAndUpload } = require('./composer');
+const { postToInstagram } = require('./instagramAPI');
+const { postToFacebook } = require('./facebookAPI');
+
+/**
+ * Auto-posting scheduler
+ * Checks for scheduled posts and publishes them to social media
+ */
+
+let schedulerRunning = false;
+
+/**
+ * Process a single scheduled post
+ * @param {Object} scheduledPost - ScheduledPost document
+ */
+async function processScheduledPost(scheduledPost) {
+    try {
+        console.log(`\n🔄 Processing scheduled post ${scheduledPost._id}...`);
+
+        // Populate festival and user data
+        await scheduledPost.populate('festival');
+        await scheduledPost.populate('user');
+
+        const festival = scheduledPost.festival;
+        const user = scheduledPost.user;
+
+        if (!festival || !user) {
+            console.error('❌ Festival or user not found');
+            scheduledPost.status = 'failed';
+            scheduledPost.result = { error: 'Festival or user not found' };
+            await scheduledPost.save();
+            return;
+        }
+
+        console.log(`📅 Festival: ${festival.name}`);
+        console.log(`👤 User: ${user.name} (${user.email})`);
+
+        // Check if user has footer image
+        if (!user.profile?.footerImage?.url) {
+            console.error('❌ User has no footer image');
+            scheduledPost.status = 'failed';
+            scheduledPost.result = { error: 'User has no footer image' };
+            await scheduledPost.save();
+            return;
+        }
+
+        // Check if festival has base image
+        if (!festival.baseImage?.url) {
+            console.error('❌ Festival has no base image');
+            scheduledPost.status = 'failed';
+            scheduledPost.result = { error: 'Festival has no base image' };
+            await scheduledPost.save();
+            return;
+        }
+
+        // Step 1: Compose the image
+        console.log('🎨 Composing image...');
+        const composedImage = await composeAndUpload(
+            festival.baseImage.url,
+            user.profile.footerImage.url,
+            { width: 1080, height: 1080 }
+        );
+
+        console.log(`✅ Image composed: ${composedImage.secure_url}`);
+
+        const caption = `${festival.name}\n\n#festival #celebration`;
+        const postResults = [];
+
+        // Step 2: Post to Instagram (if connected)
+        if (user.profile?.instagramAccessToken && user.profile?.instagramBusinessId) {
+            console.log('📸 Posting to Instagram...');
+            const instagramResult = await postToInstagram(
+                user.profile.instagramAccessToken,
+                user.profile.instagramBusinessId,
+                composedImage.secure_url,
+                caption
+            );
+            postResults.push(instagramResult);
+
+            if (instagramResult.success) {
+                console.log('✅ Posted to Instagram!');
+            } else {
+                console.error('❌ Instagram post failed:', instagramResult.error);
+            }
+        } else {
+            console.log('⏭️  Instagram not connected, skipping...');
+        }
+
+        // Step 3: Post to Facebook (if connected)
+        if (user.profile?.facebookAccessToken && user.profile?.facebookPageId) {
+            console.log('📘 Posting to Facebook...');
+            const facebookResult = await postToFacebook(
+                user.profile.facebookAccessToken,
+                user.profile.facebookPageId,
+                composedImage.secure_url,
+                caption
+            );
+            postResults.push(facebookResult);
+
+            if (facebookResult.success) {
+                console.log('✅ Posted to Facebook!');
+            } else {
+                console.error('❌ Facebook post failed:', facebookResult.error);
+            }
+        } else {
+            console.log('⏭️  Facebook not connected, skipping...');
+        }
+
+        // Update scheduled post status
+        const successCount = postResults.filter(r => r.success).length;
+        
+        if (successCount > 0) {
+            scheduledPost.status = 'posted';
+            scheduledPost.result = {
+                composedImageUrl: composedImage.secure_url,
+                posts: postResults,
+                postedAt: new Date()
+            };
+            console.log(`✅ Successfully posted to ${successCount} platform(s)!`);
+        } else {
+            scheduledPost.status = 'failed';
+            scheduledPost.result = {
+                composedImageUrl: composedImage.secure_url,
+                posts: postResults,
+                error: 'All platforms failed'
+            };
+            console.error('❌ All platforms failed');
+        }
+
+        scheduledPost.attempts = (scheduledPost.attempts || 0) + 1;
+        await scheduledPost.save();
+
+    } catch (error) {
+        console.error('❌ Error processing scheduled post:', error);
+        scheduledPost.status = 'failed';
+        scheduledPost.result = { error: error.message };
+        scheduledPost.attempts = (scheduledPost.attempts || 0) + 1;
+        await scheduledPost.save();
+    }
+}
+
+/**
+ * Check and process all pending scheduled posts
+ */
+async function checkAndPostScheduled() {
+    if (schedulerRunning) {
+        console.log('⏳ Scheduler already running, skipping...');
+        return;
+    }
+
+    schedulerRunning = true;
+
+    try {
+        const now = new Date();
+        console.log(`\n⏰ [${now.toISOString()}] Checking for scheduled posts...`);
+
+        // Find all pending posts that are due (scheduledAt <= now)
+        const pendingPosts = await ScheduledPost.find({
+            status: 'pending',
+            scheduledAt: { $lte: now }
+        }).limit(10); // Process max 10 at a time
+
+        if (pendingPosts.length === 0) {
+            console.log('✨ No pending posts to process');
+            schedulerRunning = false;
+            return;
+        }
+
+        console.log(`📋 Found ${pendingPosts.length} pending post(s) to process`);
+
+        // Process each post
+        for (const post of pendingPosts) {
+            await processScheduledPost(post);
+            // Small delay between posts to avoid rate limiting
+            await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+
+        console.log(`\n✅ Finished processing ${pendingPosts.length} post(s)\n`);
+
+    } catch (error) {
+        console.error('❌ Scheduler error:', error);
+    } finally {
+        schedulerRunning = false;
+    }
+}
+
+/**
+ * Start the auto-posting cron job
+ * Runs every hour at minute 0
+ */
+function startScheduler() {
+    console.log('🚀 Starting auto-posting scheduler...');
+    console.log('⏰ Will check for scheduled posts every hour');
+
+    // Run every hour at minute 0 (e.g., 1:00, 2:00, 3:00)
+    // Cron format: minute hour day month dayOfWeek
+    cron.schedule('0 * * * *', async () => {
+        await checkAndPostScheduled();
+    });
+
+    // Also run immediately on startup to catch any missed posts
+    setTimeout(async () => {
+        console.log('🔍 Running initial check for scheduled posts...');
+        await checkAndPostScheduled();
+    }, 5000); // Wait 5 seconds after server start
+
+    console.log('✅ Scheduler started successfully!');
+}
+
+/**
+ * Manual trigger for testing
+ */
+async function manualTrigger() {
+    console.log('🔧 Manual scheduler trigger...');
+    await checkAndPostScheduled();
+}
+
+module.exports = {
+    startScheduler,
+    manualTrigger,
+    checkAndPostScheduled
+};
