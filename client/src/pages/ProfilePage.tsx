@@ -93,69 +93,70 @@ export const ProfilePage = () => {
 
   return (
     <div>
-      <div className="page-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+      <div className="mb-8 flex flex-col items-start justify-between gap-4 md:flex-row md:items-start">
+        <div className="flex items-center gap-3">
           <button
             type="button"
-            className="btn ghost"
-            style={{ paddingInline: '0.75rem' }}
+            className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-full border border-[rgba(0,48,73,0.25)] bg-[#fdf0d5] px-3 py-2.5 text-[0.9rem] text-[#003049] transition-all duration-150 hover:border-[#669bbc] hover:bg-[#fffaf0]"
             onClick={() => navigate('/')}
           >
             ← Back
           </button>
-          <div className="page-title">Profile</div>
+          <div className="text-[1.3rem] font-semibold text-[#003049]">Profile</div>
         </div>
-        <p className="subtle">
+        <p className="text-[0.85rem] text-[#7f7270]">
           Tell us about you so we can personalise your social media creatives.
         </p>
       </div>
 
-      <div className="centered-form">
-        <section className="card">
-          <form className="card-grid" onSubmit={handleSubmit(onSubmit)}>
-            <div className="form-field">
-              <label htmlFor="name">Name</label>
+      <div className="flex w-full justify-center">
+        <section className="w-full max-w-[900px] rounded-2xl border border-[rgba(0,48,73,0.18)] bg-[#fffaf0] p-6 shadow-[0_14px_40px_rgba(0,48,73,0.14)]">
+          <form className="grid gap-4" onSubmit={handleSubmit(onSubmit)}>
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="name" className="text-[0.85rem] text-[#003049]">Name</label>
               <input
                 id="name"
                 placeholder="Your full name"
+                className="rounded-xl border border-[rgba(0,48,73,0.3)] bg-[#fffaf0] px-3 py-2 text-[0.9rem] text-[#003049] placeholder:text-[#c9bfb6] focus:border-[#669bbc] focus:outline-none focus:ring-2 focus:ring-[#669bbc]/20"
                 {...register('name', { required: 'Name is required' })}
               />
               {errors.name && (
-                <p className="field-error">{errors.name.message}</p>
+                <p className="m-0 text-xs text-[#c1121f]">{errors.name.message}</p>
               )}
             </div>
 
-            <div className="form-field">
-              <label>Profile photo</label>
-              <div className="party-row">
-                <div className="avatar">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[0.85rem] text-[#003049]">Profile photo</label>
+              <div className="flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-[radial-gradient(circle_at_30%_0,#c1121f,#780000_60%,#003049)] text-[0.9rem] text-[#fdf0d5]">
                   {user?.photoUrl ? (
-                    <img src={user.photoUrl} alt={user.name} />
+                    <img src={user.photoUrl} alt={user.name} className="h-full w-full object-cover" />
                   ) : (
                     <span>{user?.name?.charAt(0).toUpperCase() ?? 'U'}</span>
                   )}
                 </div>
-                <div className="stack-sm">
-                  <label className="btn ghost small">
+                <div className="flex flex-col gap-2">
+                  <label className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-full border border-[rgba(0,48,73,0.25)] bg-[#fdf0d5] px-3 py-1.5 text-[0.85rem] text-[#003049] transition-all duration-150 hover:border-[#669bbc] hover:bg-[#fffaf0]">
                     Upload PNG
                     <input
                       type="file"
                       accept="image/png"
-                      style={{ display: 'none' }}
+                      className="hidden"
                       onChange={handlePhotoUpload}
                     />
                   </label>
-                  <span className="small muted">
+                  <span className="text-xs text-[#7f7270]">
                     PNG format, white background recommended.
                   </span>
                 </div>
               </div>
             </div>
 
-            <div className="form-field">
-              <label>Party</label>
-              <div style={{ marginTop: '0.5rem' }}>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[0.85rem] text-[#003049]">Party</label>
+              <div className="mt-2">
                 <select
+                  className="w-full rounded-xl border border-[rgba(0,48,73,0.3)] bg-[#fffaf0] px-3 py-2 text-[0.9rem] text-[#003049] focus:border-[#669bbc] focus:outline-none focus:ring-2 focus:ring-[#669bbc]/20"
                   {...register('partyPredefined')}
                 >
                   <option value="">Select your party</option>
@@ -165,76 +166,77 @@ export const ProfilePage = () => {
               </div>
             </div>
 
-            <div className="form-field">
-              <label htmlFor="customPartyName">If not listed</label>
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="customPartyName" className="text-[0.85rem] text-[#003049]">If not listed</label>
               <input
                 id="customPartyName"
                 placeholder="Enter party name"
+                className="rounded-xl border border-[rgba(0,48,73,0.3)] bg-[#fffaf0] px-3 py-2 text-[0.9rem] text-[#003049] placeholder:text-[#c9bfb6] disabled:opacity-50 focus:border-[#669bbc] focus:outline-none focus:ring-2 focus:ring-[#669bbc]/20"
                 {...register('customPartyName')}
                 disabled={!!partyPredefined}
               />
             </div>
 
-            <div className="form-field">
-              <label>Upload party logo</label>
-              <div className="party-row">
-                <div className="logo-preview">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[0.85rem] text-[#003049]">Upload party logo</label>
+              <div className="flex items-center gap-2">
+                <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl border border-dashed border-[rgba(0,48,73,0.4)]">
                   {user?.party?.logoUrl ? (
-                    <img src={user.party.logoUrl} alt="Party logo" />
+                    <img src={user.party.logoUrl} alt="Party logo" className="h-full w-full object-contain" />
                   ) : (
-                    <span className="small muted">Logo</span>
+                    <span className="text-xs text-[#7f7270]">Logo</span>
                   )}
                 </div>
-                <label className="btn ghost small">
+                <label className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-full border border-[rgba(0,48,73,0.25)] bg-[#fdf0d5] px-3 py-1.5 text-[0.85rem] text-[#003049] transition-all duration-150 hover:border-[#669bbc] hover:bg-[#fffaf0]">
                   Upload logo
                   <input
                     type="file"
                     accept="image/*"
-                    style={{ display: 'none' }}
+                    className="hidden"
                     onChange={handlePartyLogoUpload}
                   />
                 </label>
               </div>
             </div>
 
-            <div className="form-field">
-              <label>Festival selection</label>
-              <div className="chip-row">
-                <label className="chip">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[0.85rem] text-[#003049]">Festival selection</label>
+              <div className="flex gap-2">
+                <label className="cursor-pointer rounded-full border border-[rgba(0,48,73,0.4)] px-3 py-1 text-[0.8rem] has-[:checked]:border-[#c1121f] has-[:checked]:bg-[rgba(193,18,31,0.08)]">
                   <input
                     type="radio"
                     value="hindu"
                     {...register('festivalPreference', { required: true })}
-                    style={{ display: 'none' }}
+                    className="hidden"
                   />
                   Hindu
                 </label>
-                <label className="chip">
+                <label className="cursor-pointer rounded-full border border-[rgba(0,48,73,0.4)] px-3 py-1 text-[0.8rem] has-[:checked]:border-[#c1121f] has-[:checked]:bg-[rgba(193,18,31,0.08)]">
                   <input
                     type="radio"
                     value="muslim"
                     {...register('festivalPreference', { required: true })}
-                    style={{ display: 'none' }}
+                    className="hidden"
                   />
                   Muslim
                 </label>
-                <label className="chip">
+                <label className="cursor-pointer rounded-full border border-[rgba(0,48,73,0.4)] px-3 py-1 text-[0.8rem] has-[:checked]:border-[#c1121f] has-[:checked]:bg-[rgba(193,18,31,0.08)]">
                   <input
                     type="radio"
                     value="all"
                     {...register('festivalPreference', { required: true })}
-                    style={{ display: 'none' }}
+                    className="hidden"
                   />
                   All
                 </label>
               </div>
               {errors.festivalPreference && (
-                <p className="field-error">Please choose at least one.</p>
+                <p className="m-0 text-xs text-[#c1121f]">Please choose at least one.</p>
               )}
             </div>
 
             <button
-              className="btn primary"
+              className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-full border-0 bg-gradient-to-br from-[#780000] to-[#c1121f] px-4 py-2.5 text-[0.9rem] text-[#fdf0d5] shadow-[0_14px_35px_rgba(120,0,0,0.45)] transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[0_16px_40px_rgba(120,0,0,0.5)] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 disabled:shadow-[0_14px_35px_rgba(120,0,0,0.45)]"
               type="submit"
               disabled={isSubmitting}
             >

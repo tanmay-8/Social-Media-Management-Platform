@@ -74,28 +74,27 @@ export const SubscriptionPage = () => {
 
   return (
     <div>
-      <div className="page-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+      <div className="mb-8 flex flex-col items-start justify-between gap-4 md:flex-row md:items-start">
+        <div className="flex items-center gap-3">
           <button
             type="button"
-            className="btn ghost"
-            style={{ paddingInline: '0.75rem' }}
+            className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-full border border-[rgba(0,48,73,0.25)] bg-[#fdf0d5] px-3 py-2.5 text-[0.9rem] text-[#003049] transition-all duration-150 hover:border-[#669bbc] hover:bg-[#fffaf0]"
             onClick={() => navigate('/')}
           >
             ← Back
           </button>
-          <div className="page-title">Subscription</div>
+          <div className="text-[1.3rem] font-semibold text-[#003049]">Subscription</div>
         </div>
-        <p className="subtle">
+        <p className="text-[0.85rem] text-[#7f7270]">
           Choose a plan and pay securely with Razorpay to unlock automated
           festival creatives.
         </p>
       </div>
 
-      <div className="two-col">
-        <section className="card">
-          <h3 style={{ marginTop: 0, marginBottom: '0.5rem' }}>Plans</h3>
-          <div className="plans-grid">
+      <div className="grid gap-4 lg:grid-cols-[1.3fr_1fr]">
+        <section className="rounded-2xl border border-[rgba(0,48,73,0.18)] bg-[#fffaf0] p-6 shadow-[0_14px_40px_rgba(0,48,73,0.14)]">
+          <h3 className="mb-2 mt-0 text-[#003049]">Plans</h3>
+          <div className="mt-3 grid grid-cols-2 gap-3.5 sm:grid-cols-4">
             {[1, 3, 6, 12].map((duration) => {
               const d = duration as Duration;
               return (
@@ -103,19 +102,22 @@ export const SubscriptionPage = () => {
                   key={d}
                   type="button"
                   className={
-                    'plan-card ' + (selected === d ? 'selected' : '')
+                    'flex cursor-pointer flex-col gap-1 rounded-2xl border bg-[#fffaf0] px-3.5 py-3.5 transition-all ' +
+                    (selected === d 
+                      ? 'border-[#c1121f] shadow-[0_14px_38px_rgba(193,18,31,0.25)]' 
+                      : 'border-[rgba(0,48,73,0.25)] hover:border-[rgba(0,48,73,0.4)]')
                   }
                   onClick={() => setSelected(d)}
                 >
-                  <div className="plan-duration">
+                  <div className="font-semibold text-[#003049]">
                     {d} month{d > 1 ? 's' : ''}
                   </div>
-                  <div className="plan-price">
+                  <div className="text-[0.9rem] text-[#003049]">
                     ₹{PLAN_PRICES[d].toLocaleString('en-IN')}
                   </div>
-                  {d === 3 && <div className="badge secondary">Popular</div>}
+                  {d === 3 && <div className="inline-flex items-center gap-1 rounded-full bg-[rgba(193,18,31,0.13)] px-2.5 py-1 text-xs text-[#780000]">Popular</div>}
                   {d === 12 && (
-                    <div className="plan-note">Best value for agencies</div>
+                    <div className="text-xs text-[#7f7270]">Best value for agencies</div>
                   )}
                 </button>
               );
@@ -123,38 +125,37 @@ export const SubscriptionPage = () => {
           </div>
 
           <button
-            className="btn primary"
+            className="mt-4 inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-full border-0 bg-gradient-to-br from-[#780000] to-[#c1121f] px-4 py-2.5 text-[0.9rem] text-[#fdf0d5] shadow-[0_14px_35px_rgba(120,0,0,0.45)] transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[0_16px_40px_rgba(120,0,0,0.5)] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 disabled:shadow-[0_14px_35px_rgba(120,0,0,0.45)]"
             type="button"
             onClick={startCheckout}
             disabled={isPaying || !user}
-            style={{ marginTop: '1rem' }}
           >
             {isPaying ? 'Opening Razorpay…' : 'Pay with Razorpay'}
           </button>
 
-          <p className="razorpay-note">
+          <p className="mt-2 text-xs text-[#7f7270]">
             This is a frontend-only integration. Connect it to your backend to
             create real Razorpay orders and verify payments.
           </p>
         </section>
 
-        <aside className="card">
-          <h3 style={{ marginTop: 0, marginBottom: '0.5rem' }}>
+        <aside className="rounded-2xl border border-[rgba(0,48,73,0.18)] bg-[#fffaf0] p-6 shadow-[0_14px_40px_rgba(0,48,73,0.14)]">
+          <h3 className="mb-2 mt-0 text-[#003049]">
             Current subscription
           </h3>
           {subscription ? (
-            <div className="sub-status">
-              <span className="badge">
+            <div className="flex flex-col gap-1.5">
+              <span className="inline-flex w-fit items-center gap-1 rounded-full bg-[rgba(102,155,188,0.2)] px-2.5 py-1 text-xs text-[#003049]">
                 Active · {subscription.durationMonths} month
                 {subscription.durationMonths > 1 ? 's' : ''}
               </span>
-              <p className="small muted">
+              <p className="text-[0.8rem] text-[#7f7270]">
                 After payment verification in your backend, you can mark
                 subscriptions active and set an expiry date.
               </p>
             </div>
           ) : (
-            <p className="small muted">
+            <p className="text-[0.8rem] text-[#7f7270]">
               No active subscription. Select a plan and complete payment to
               activate.
             </p>
