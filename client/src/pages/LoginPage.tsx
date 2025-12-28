@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store';
-import { loginUser } from '../services/auth';
+import { authService } from '../services/authService';
 import { AlertCircle, ArrowRight, Loader2 } from 'lucide-react';
 
 interface LoginFormValues {
@@ -30,14 +30,20 @@ export const LoginPage = () => {
   const onSubmit = async (data: LoginFormValues) => {
     setSubmitError(null);
     try {
-      const user = await loginUser({
+      const result = await authService.login({
         email: data.email,
         password: data.password
       });
+      
+      // Update store with user data including role
       login({
-        id: user.id,
-        name: user.name
+        id: result.user.id,
+        name: result.user.name,
+        email: result.user.email,
+        role: result.user.role,
+        photoUrl: result.user.profile?.footerImage?.url
       });
+      
       navigate('/profile');
     } catch (err) {
       const message =

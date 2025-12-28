@@ -8,12 +8,15 @@ const router = express.Router();
 router.get('/', auth, async (req, res) => {
     try {
         const userCategory = req.user.profile?.festivalCategory || 'all';
-        const year = req.query.year || new Date().getFullYear(); // Default to current year
-        
         const Festival = require('../models/Festival');
         
         // Build query
-        const query = { year: parseInt(year) };
+        const query = {};
+        
+        // Filter by year if provided
+        if (req.query.year) {
+            query.year = parseInt(req.query.year);
+        }
         
         // Filter by category if not 'all'
         if (userCategory !== 'all') {
@@ -25,7 +28,7 @@ router.get('/', auth, async (req, res) => {
         res.json({
             festivals,
             category: userCategory,
-            year: parseInt(year),
+            year: req.query.year ? parseInt(req.query.year) : 'all',
             count: festivals.length
         });
     } catch (error) {

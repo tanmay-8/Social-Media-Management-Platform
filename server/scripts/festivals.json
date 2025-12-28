@@ -1,0 +1,1237 @@
+[
+    {
+        "name": "New Year",
+        "date": "2026-01-01T00:00:00.000Z",
+        "year": 2026,
+        "category": "other",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Gregorian calendar New Year",
+        "createdAt": "2026-01-01T00:00:00.000Z"
+    },
+    {
+        "name": "Khristabda 2026 Begins",
+        "date": "2026-01-01T00:00:00.000Z",
+        "year": 2026,
+        "category": "other",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Start of Christian calendar year",
+        "createdAt": "2026-01-01T00:00:00.000Z"
+    },
+    {
+        "name": "Savitribai Phule Mahila Mukti Din",
+        "date": "2026-01-03T00:00:00.000Z",
+        "year": 2026,
+        "category": "other",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Women empowerment day in Maharashtra",
+        "createdAt": "2026-01-03T00:00:00.000Z"
+    },
+    {
+        "name": "Saphala Ekadashi",
+        "date": "2026-01-10T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Ekadashi vrat",
+        "createdAt": "2026-01-10T00:00:00.000Z"
+    },
+    {
+        "name": "Lohri",
+        "date": "2026-01-13T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Punjabi harvest festival",
+        "createdAt": "2026-01-13T00:00:00.000Z"
+    },
+    {
+        "name": "Makar Sankranti",
+        "date": "2026-01-14T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Solar transition festival",
+        "createdAt": "2026-01-14T00:00:00.000Z"
+    },
+    {
+        "name": "Pongal",
+        "date": "2026-01-15T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Tamil harvest festival",
+        "createdAt": "2026-01-15T00:00:00.000Z"
+    },
+    {
+        "name": "Republic Day",
+        "date": "2026-01-26T00:00:00.000Z",
+        "year": 2026,
+        "category": "other",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Indian Republic Day",
+        "createdAt": "2026-01-26T00:00:00.000Z"
+    },
+    {
+        "name": "Shattila Ekadashi",
+        "date": "2026-02-02T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Ekadashi vrat",
+        "createdAt": "2026-02-02T00:00:00.000Z"
+    },
+    {
+        "name": "Basant Panchami",
+        "date": "2026-02-14T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Saraswati Puja",
+        "createdAt": "2026-02-14T00:00:00.000Z"
+    },
+    {
+        "name": "Magha Purnima",
+        "date": "2026-02-23T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Full moon of Magha month",
+        "createdAt": "2026-02-23T00:00:00.000Z"
+    },
+    {
+        "name": "Mahashivratri",
+        "date": "2026-03-04T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Dedicated to Lord Shiva",
+        "createdAt": "2026-03-04T00:00:00.000Z"
+    },
+    {
+        "name": "Holi",
+        "date": "2026-03-25T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Festival of colors",
+        "createdAt": "2026-03-25T00:00:00.000Z"
+    },
+    {
+        "name": "Ugadi / Gudi Padwa",
+        "date": "2026-04-07T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Hindu New Year",
+        "createdAt": "2026-04-07T00:00:00.000Z"
+    },
+    {
+        "name": "Ram Navami",
+        "date": "2026-04-16T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Birth of Lord Rama",
+        "createdAt": "2026-04-16T00:00:00.000Z"
+    },
+    {
+        "name": "Hanuman Jayanti",
+        "date": "2026-04-22T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Birth of Lord Hanuman",
+        "createdAt": "2026-04-22T00:00:00.000Z"
+    },
+    {
+        "name": "Akshaya Tritiya",
+        "date": "2026-05-10T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Highly auspicious Hindu day",
+        "createdAt": "2026-05-10T00:00:00.000Z"
+    },
+    {
+        "name": "Raksha Bandhan",
+        "date": "2026-08-29T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Bond of brother and sister",
+        "createdAt": "2026-08-29T00:00:00.000Z"
+    },
+    {
+        "name": "Janmashtami",
+        "date": "2026-09-04T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Birth of Lord Krishna",
+        "createdAt": "2026-09-04T00:00:00.000Z"
+    },
+    {
+        "name": "Ganesh Chaturthi",
+        "date": "2026-09-12T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Birth of Lord Ganesha",
+        "createdAt": "2026-09-12T00:00:00.000Z"
+    },
+    {
+        "name": "Dussehra",
+        "date": "2026-10-19T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Victory of good over evil",
+        "createdAt": "2026-10-19T00:00:00.000Z"
+    },
+    {
+        "name": "Diwali",
+        "date": "2026-11-08T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Festival of lights",
+        "createdAt": "2026-11-08T00:00:00.000Z"
+    },
+    {
+        "name": "Christmas",
+        "date": "2026-12-25T00:00:00.000Z",
+        "year": 2026,
+        "category": "other",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Birth of Jesus Christ",
+        "createdAt": "2026-12-25T00:00:00.000Z"
+    },
+    {
+        "name": "Varuthini Ekadashi",
+        "date": "2026-05-03T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Ekadashi vrat of Vaishakha month",
+        "createdAt": "2026-05-03T00:00:00.000Z"
+    },
+    {
+        "name": "Vaishakha Amavasya",
+        "date": "2026-05-06T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "New moon day of Vaishakha",
+        "createdAt": "2026-05-06T00:00:00.000Z"
+    },
+    {
+        "name": "Vrishabha Sankranti",
+        "date": "2026-05-14T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Solar transition into Taurus",
+        "createdAt": "2026-05-14T00:00:00.000Z"
+    },
+    {
+        "name": "Mohini Ekadashi",
+        "date": "2026-05-18T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Ekadashi dedicated to Lord Vishnu",
+        "createdAt": "2026-05-18T00:00:00.000Z"
+    },
+    {
+        "name": "Vaishakha Purnima",
+        "date": "2026-05-22T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Buddha Purnima",
+        "createdAt": "2026-05-22T00:00:00.000Z"
+    },
+    {
+        "name": "Sankashti Chaturthi",
+        "date": "2026-05-26T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Ganesha vrat",
+        "createdAt": "2026-05-26T00:00:00.000Z"
+    },
+    {
+        "name": "Nirjala Ekadashi",
+        "date": "2026-06-02T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Most austere Ekadashi",
+        "createdAt": "2026-06-02T00:00:00.000Z"
+    },
+    {
+        "name": "Jyeshtha Amavasya",
+        "date": "2026-06-05T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Vat Savitri Amavasya",
+        "createdAt": "2026-06-05T00:00:00.000Z"
+    },
+    {
+        "name": "Mithuna Sankranti",
+        "date": "2026-06-15T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Solar transition into Gemini",
+        "createdAt": "2026-06-15T00:00:00.000Z"
+    },
+    {
+        "name": "Yogini Ekadashi",
+        "date": "2026-06-16T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Ekadashi for relief from sins",
+        "createdAt": "2026-06-16T00:00:00.000Z"
+    },
+    {
+        "name": "Jyeshtha Purnima",
+        "date": "2026-06-20T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Vat Purnima",
+        "createdAt": "2026-06-20T00:00:00.000Z"
+    },
+    {
+        "name": "Devshayani Ekadashi",
+        "date": "2026-07-01T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Lord Vishnu enters cosmic sleep",
+        "createdAt": "2026-07-01T00:00:00.000Z"
+    },
+    {
+        "name": "Ashadha Amavasya",
+        "date": "2026-07-04T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "New moon of Ashadha",
+        "createdAt": "2026-07-04T00:00:00.000Z"
+    },
+    {
+        "name": "Karka Sankranti",
+        "date": "2026-07-16T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Solar transition into Cancer",
+        "createdAt": "2026-07-16T00:00:00.000Z"
+    },
+    {
+        "name": "Kamika Ekadashi",
+        "date": "2026-07-16T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Shravana month Ekadashi",
+        "createdAt": "2026-07-16T00:00:00.000Z"
+    },
+    {
+        "name": "Shravana Amavasya",
+        "date": "2026-08-02T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "New moon of Shravana",
+        "createdAt": "2026-08-02T00:00:00.000Z"
+    },
+    {
+        "name": "Hariyali Teej",
+        "date": "2026-08-05T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Monsoon festival for married women",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+    },
+    {
+        "name": "Nag Panchami",
+        "date": "2026-08-08T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Serpent worship festival",
+        "createdAt": "2026-08-08T00:00:00.000Z"
+    },
+    {
+        "name": "Shravana Putrada Ekadashi",
+        "date": "2026-08-15T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Ekadashi for progeny",
+        "createdAt": "2026-08-15T00:00:00.000Z"
+    },
+    {
+        "name": "Independence Day",
+        "date": "2026-08-15T00:00:00.000Z",
+        "year": 2026,
+        "category": "other",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "India Independence Day",
+        "createdAt": "2026-08-15T00:00:00.000Z"
+    },
+    {
+        "name": "Hartalika Teej",
+        "date": "2026-09-05T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Fast for marital bliss",
+        "createdAt": "2026-09-05T00:00:00.000Z"
+    },
+    {
+        "name": "Anant Chaturdashi",
+        "date": "2026-09-21T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Ganesh Visarjan day",
+        "createdAt": "2026-09-21T00:00:00.000Z"
+    },
+    {
+        "name": "Karva Chauth",
+        "date": "2026-10-26T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Married women fast",
+        "createdAt": "2026-10-26T00:00:00.000Z"
+    },
+    {
+        "name": "Govardhan Puja",
+        "date": "2026-11-09T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Krishna lifts Govardhan hill",
+        "createdAt": "2026-11-09T00:00:00.000Z"
+    },
+    {
+        "name": "Bhai Dooj",
+        "date": "2026-11-10T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Brother–sister bond festival",
+        "createdAt": "2026-11-10T00:00:00.000Z"
+    },
+    {
+        "name": "Margashirsha Amavasya",
+        "date": "2026-12-01T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "New moon of Margashirsha",
+        "createdAt": "2026-12-01T00:00:00.000Z"
+    },
+    {
+        "name": "Mokshada Ekadashi",
+        "date": "2026-12-11T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Ekadashi of Bhagavad Gita",
+        "createdAt": "2026-12-11T00:00:00.000Z"
+    },
+    {
+        "name": "Margashirsha Purnima",
+        "date": "2026-12-15T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Dattatreya Jayanti",
+        "createdAt": "2026-12-15T00:00:00.000Z"
+    },
+    {
+        "name": "Pradosh Vrat (K)",
+        "date": "2026-01-12T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Krishna Paksha Pradosh",
+        "createdAt": "2026-01-12T00:00:00.000Z"
+    },
+    {
+        "name": "Pradosh Vrat (S)",
+        "date": "2026-01-27T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Shukla Paksha Pradosh",
+        "createdAt": "2026-01-27T00:00:00.000Z"
+    },
+    {
+        "name": "Masik Shivaratri",
+        "date": "2026-01-20T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Monthly Shivaratri",
+        "createdAt": "2026-01-20T00:00:00.000Z"
+    },
+    {
+        "name": "Phalguna Amavasya",
+        "date": "2026-03-06T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "New moon of Phalguna",
+        "createdAt": "2026-03-06T00:00:00.000Z"
+    },
+    {
+        "name": "Papmochani Ekadashi",
+        "date": "2026-04-04T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Ekadashi for absolution of sins",
+        "createdAt": "2026-04-04T00:00:00.000Z"
+    },
+    {
+        "name": "Chaitra Amavasya",
+        "date": "2026-04-06T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "New moon of Chaitra",
+        "createdAt": "2026-04-06T00:00:00.000Z"
+    },
+    {
+        "name": "Chaitra Purnima",
+        "date": "2026-04-23T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Full moon of Chaitra",
+        "createdAt": "2026-04-23T00:00:00.000Z"
+    },
+    {
+        "name": "Ganga Saptami",
+        "date": "2026-05-01T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Descent of River Ganga",
+        "createdAt": "2026-05-01T00:00:00.000Z"
+    },
+    {
+        "name": "Savitri Vrat",
+        "date": "2026-06-05T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Married women pray for husband",
+        "createdAt": "2026-06-05T00:00:00.000Z"
+    },
+    {
+        "name": "Ashadhi Ekadashi",
+        "date": "2026-07-01T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Pandharpur Wari Ekadashi",
+        "createdAt": "2026-07-01T00:00:00.000Z"
+    },
+    {
+        "name": "Guru Purnima",
+        "date": "2026-07-20T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Honoring spiritual teachers",
+        "createdAt": "2026-07-20T00:00:00.000Z"
+    },
+    {
+        "name": "Aja Ekadashi",
+        "date": "2026-08-28T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Krishna Paksha Ekadashi of Bhadrapada",
+        "createdAt": "2026-08-28T00:00:00.000Z"
+    },
+    {
+        "name": "Ganesh Visarjan",
+        "date": "2026-09-21T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Immersion of Lord Ganesha idols",
+        "createdAt": "2026-09-21T00:00:00.000Z"
+    },
+    {
+        "name": "Sharad Purnima",
+        "date": "2026-10-27T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Kojagiri Purnima",
+        "createdAt": "2026-10-27T00:00:00.000Z"
+    },
+    {
+        "name": "Kartik Purnima",
+        "date": "2026-11-15T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Sacred Kartik month full moon",
+        "createdAt": "2026-11-15T00:00:00.000Z"
+    },
+    {
+        "name": "Pradosh Vrat (K)",
+        "date": "2026-02-04T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Krishna Paksha Pradosh",
+        "createdAt": "2026-02-04T00:00:00.000Z"
+    },
+    {
+        "name": "Pradosh Vrat (S)",
+        "date": "2026-02-20T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Shukla Paksha Pradosh",
+        "createdAt": "2026-02-20T00:00:00.000Z"
+    },
+    {
+        "name": "Masik Shivaratri",
+        "date": "2026-02-05T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Monthly Shivaratri",
+        "createdAt": "2026-02-05T00:00:00.000Z"
+    },
+    {
+        "name": "Ranga Panchami",
+        "date": "2026-03-30T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Color festival after Holi",
+        "createdAt": "2026-03-30T00:00:00.000Z"
+    },
+    {
+        "name": "Meena Sankranti",
+        "date": "2026-03-14T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Solar transition into Pisces",
+        "createdAt": "2026-03-14T00:00:00.000Z"
+    },
+    {
+        "name": "Kamada Ekadashi",
+        "date": "2026-04-19T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Ekadashi of Chaitra Shukla Paksha",
+        "createdAt": "2026-04-19T00:00:00.000Z"
+    },
+    {
+        "name": "Parashurama Jayanti",
+        "date": "2026-05-01T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Birth of Lord Parashurama",
+        "createdAt": "2026-05-01T00:00:00.000Z"
+    },
+    {
+        "name": "Narada Jayanti",
+        "date": "2026-05-04T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Birth of Sage Narada",
+        "createdAt": "2026-05-04T00:00:00.000Z"
+    },
+    {
+        "name": "Masik Shivaratri",
+        "date": "2026-05-06T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Monthly Shivaratri",
+        "createdAt": "2026-05-06T00:00:00.000Z"
+    },
+    {
+        "name": "Ganga Dussehra",
+        "date": "2026-06-10T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Celebrates descent of Ganga",
+        "createdAt": "2026-06-10T00:00:00.000Z"
+    },
+    {
+        "name": "Masik Shivaratri",
+        "date": "2026-06-04T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Monthly Shivaratri",
+        "createdAt": "2026-06-04T00:00:00.000Z"
+    },
+    {
+        "name": "Pradosh Vrat (K)",
+        "date": "2026-06-18T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Krishna Paksha Pradosh",
+        "createdAt": "2026-06-18T00:00:00.000Z"
+    },
+    {
+        "name": "Pradosh Vrat (S)",
+        "date": "2026-07-03T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Shukla Paksha Pradosh",
+        "createdAt": "2026-07-03T00:00:00.000Z"
+    },
+    {
+        "name": "Masik Shivaratri",
+        "date": "2026-07-04T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Monthly Shivaratri",
+        "createdAt": "2026-07-04T00:00:00.000Z"
+    },
+    {
+        "name": "Shravana Somvar Begins",
+        "date": "2026-07-20T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "First Monday of Shravan month",
+        "createdAt": "2026-07-20T00:00:00.000Z"
+    },
+    {
+        "name": "Kajari Teej",
+        "date": "2026-08-22T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Monsoon fasting festival",
+        "createdAt": "2026-08-22T00:00:00.000Z"
+    },
+    {
+        "name": "Bhadrapada Amavasya",
+        "date": "2026-09-02T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "New moon of Bhadrapada",
+        "createdAt": "2026-09-02T00:00:00.000Z"
+    },
+    {
+        "name": "Parivartini Ekadashi",
+        "date": "2026-09-14T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Ekadashi of Vishnu transformation",
+        "createdAt": "2026-09-14T00:00:00.000Z"
+    },
+    {
+        "name": "Bhadrapada Purnima",
+        "date": "2026-09-18T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Full moon of Bhadrapada",
+        "createdAt": "2026-09-18T00:00:00.000Z"
+    },
+    {
+        "name": "Ashwin Amavasya",
+        "date": "2026-10-02T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "New moon of Ashwin",
+        "createdAt": "2026-10-02T00:00:00.000Z"
+    },
+    {
+        "name": "Sharad Navratri Begins",
+        "date": "2026-10-03T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Nine nights of Goddess Durga",
+        "createdAt": "2026-10-03T00:00:00.000Z"
+    },
+    {
+        "name": "Durga Ashtami",
+        "date": "2026-10-11T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Ashtami of Durga Puja",
+        "createdAt": "2026-10-11T00:00:00.000Z"
+    },
+    {
+        "name": "Ashwin Purnima",
+        "date": "2026-10-27T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Kojagiri Lakshmi Puja",
+        "createdAt": "2026-10-27T00:00:00.000Z"
+    },
+    {
+        "name": "Chhath Puja",
+        "date": "2026-11-12T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Sun worship festival",
+        "createdAt": "2026-11-12T00:00:00.000Z"
+    },
+    {
+        "name": "Devutthana Ekadashi",
+        "date": "2026-11-12T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Lord Vishnu awakens",
+        "createdAt": "2026-11-12T00:00:00.000Z"
+    },
+    {
+        "name": "Vrischika Sankranti",
+        "date": "2026-11-16T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Solar transition into Scorpio",
+        "createdAt": "2026-11-16T00:00:00.000Z"
+    },
+    {
+        "name": "Utpanna Ekadashi",
+        "date": "2026-11-26T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Origin of Ekadashi vrat",
+        "createdAt": "2026-11-26T00:00:00.000Z"
+    },
+    {
+        "name": "Dhanu Sankranti",
+        "date": "2026-12-15T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Solar transition into Sagittarius",
+        "createdAt": "2026-12-15T00:00:00.000Z"
+    },
+    {
+        "name": "Saphala Ekadashi",
+        "date": "2026-12-26T00:00:00.000Z",
+        "year": 2026,
+        "category": "hindu",
+        "isRecurring": true,
+        "baseImage": {
+            "url": null,
+            "public_id": null
+        },
+        "description": "Last Ekadashi of the year",
+        "createdAt": "2026-12-26T00:00:00.000Z"
+    }
+]

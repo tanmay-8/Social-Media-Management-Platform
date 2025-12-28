@@ -1,205 +1,95 @@
 const mongoose = require('mongoose');
 const fs = require('fs');
 const path = require('path');
-const csv = require('csv-parser');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 const Festival = require('../models/Festival');
 
-// Helper function to determine festival category
-function determineFestivalCategory(festivalName) {
-    const lowerName = festivalName.toLowerCase();
-    
-    // Check for Muslim festivals
-    const muslimKeywords = ['eid', 'ramzan', 'ramadan', 'muharram', 'shab-e-barat', 
-                            'shab-e-qadr', 'milad', 'bakrid', 'muslim', 'islam', 
-                            'jamadilakhar', 'rajab'];
-    
-    for (const keyword of muslimKeywords) {
-        if (lowerName.includes(keyword)) {
-            return 'muslim';
-        }
-    }
-    
-    // Check for Hindu festivals
-    const hinduKeywords = ['diwali', 'holi', 'navratri', 'dussehra', 'ganesh', 
-                          'durga', 'ram', 'krishna', 'shiv', 'hanuman', 'puja',
-                          'ekadashi', 'sankranti', 'purnima', 'amavasya', 'chaturthi',
-                          'ashtami', 'jayanti', 'pradosh', 'shivaratri', 'panchmi'];
-    
-    for (const keyword of hinduKeywords) {
-        if (lowerName.includes(keyword)) {
-            return 'hindu';
-        }
-    }
-    
-    // Default to 'other' for non-categorized festivals
-    return 'other';
-}
-
-// Helper function to parse date from CSV
-function parseDate(dateIso, dateLabel, festivalName) {
-    // Try ISO format first
-    if (dateIso && dateIso !== '') {
-        const parsed = new Date(dateIso);
-        if (!isNaN(parsed.getTime())) {
-            return parsed;
-        }
-    }
-    
-    // If date_label has format like "01.01.2025"
-    if (dateLabel && dateLabel.includes('.')) {
-        const parts = dateLabel.split('.');
-        if (parts.length === 3) {
-            const day = parseInt(parts[0]);
-            const month = parseInt(parts[1]) - 1; // JS months are 0-indexed
-            const year = parseInt(parts[2]);
-            const date = new Date(year, month, day);
-            if (!isNaN(date.getTime())) {
-                return date;
-            }
-        }
-    }
-    
-    // Try format: "January 1, 2026 / ०१ जानेवारी २०२६"
-    if (dateLabel && dateLabel.includes(',')) {
-        // Extract the English date part before the "/"
-        const englishPart = dateLabel.split('/')[0].trim();
-        const parsed = new Date(englishPart);
-        if (!isNaN(parsed.getTime())) {
-            return parsed;
-        }
-    }
-    
-    // Fallback: set to null and log warning
-    console.warn(`⚠️  Could not parse date for festival: ${festivalName}`);
-    return null;
-}
-
-// Helper function to determine if festival is recurring (changes date yearly)
-function isRecurringFestival(festivalName) {
-    const lowerName = festivalName.toLowerCase();
-    
-    // Festivals that follow lunar calendar (dates change every year)
-    const recurringKeywords = [
-        'ekadashi', 'purnima', 'amavasya', 'chaturthi', 'navratri', 
-        'dussehra', 'diwali', 'holi', 'ganesh', 'durga', 'janmashtami',
-        'ram navami', 'hanuman jayanti', 'mahashivratri', 'pradosh',
-        'eid', 'ramzan', 'ramadan', 'muharram', 'bakrid', 'milad',
-        'shab-e', 'sankashti', 'vijaya', 'ashtami', 'panchmi'
-    ];
-    
-    for (const keyword of recurringKeywords) {
-        if (lowerName.includes(keyword)) {
-            return true;
-        }
-    }
-    
-    // Fixed date festivals (same Gregorian date every year)
-    const fixedKeywords = [
-        'new year', 'sankranti', 'republic day', 'independence day',
-        'gandhi jayanti', 'christmas', 'ambedkar jayanti'
-    ];
-    
-    for (const keyword of fixedKeywords) {
-        if (lowerName.includes(keyword)) {
-            return false;
-        }
-    }
-    
-    // Default: assume recurring (most Indian festivals are lunar-based)
-    return true;
-}
-
 async function importFestivals() {
     try {
-        console.log('🔌 Connecting to MongoDB...');
+        const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URI;
         
-        const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/social-media-platform';
-        await mongoose.connect(MONGODB_URI);
-        
-        console.log('✅ Connected to MongoDB');
-        
-        // Get CSV filename from command line argument or use default
-        const csvFileName = process.argv[2] || 'festivals.csv';
-        const csvPath = path.join(__dirname, 'scrap_festivals', csvFileName);
-        
-        console.log(`📂 Using CSV file: ${csvFileName}`);
-        
-        // Optional: Clear existing festivals for this year only (not all data)
-        // Uncomment below if you want to replace data for a specific year
-        // const year = parseInt(csvFileName.match(/\d{4}/)?.[0]) || new Date().getFullYear();
-        // console.log(`🗑️  Clearing existing festivals for year ${year}...`);
-        // await Festival.deleteMany({ year });
-        
-        const festivals = [];
-        
-        console.log('📖 Reading CSV file...');
-        
-        // Check if file exists
-        if (!fs.existsSync(csvPath)) {
-            console.error('❌ CSV file not found at:', csvPath);
+        if (!mongoUri) {
+            console.error('❌ MongoDB connection URI not found in .env file');
+            console.log('   Please add MONGODB_URI or MONGO_URI to your .env file');
             process.exit(1);
         }
+
+        console.log('📡 Connecting to MongoDB...');
+        await mongoose.connect(mongoUri);
+        console.log('✅ Connected to MongoDB!');
+
+        // Read festivals.json file
+        const festivalsPath = path.join(__dirname, 'festivals.json');
         
-        // Read and parse CSV
-        await new Promise((resolve, reject) => {
-            fs.createReadStream(csvPath)
-                .pipe(csv())
-                .on('data', (row) => {
-                    const festivalName = row.festival?.trim();
-                    
-                    // Skip empty rows
-                    if (!festivalName) return;
-                    
-                    const date = parseDate(row.date_iso, row.date_label, festivalName);
-                    
-                    // Only add festivals with valid dates
-                    if (date) {
-                        const category = determineFestivalCategory(festivalName);
-                        const isRecurring = isRecurringFestival(festivalName);
-                        
-                        festivals.push({
-                            name: festivalName,
-                            date: date,
-                            year: date.getFullYear(),
-                            category: category,
-                            isRecurring: isRecurring,
-                            baseImage: {
-                                url: null,
-                                public_id: null
-                            },
-                            description: row.source_url || ''
-                        });
-                    }
-                })
-                .on('end', () => {
-                    console.log(`✅ CSV parsed successfully. Found ${festivals.length} festivals`);
-                    resolve();
-                })
-                .on('error', (error) => {
-                    console.error('❌ Error reading CSV:', error);
-                    reject(error);
-                });
-        });
+        if (!fs.existsSync(festivalsPath)) {
+            console.error('❌ festivals.json file not found!');
+            console.log(`   Expected path: ${festivalsPath}`);
+            process.exit(1);
+        }
+
+        console.log('\n📂 Reading festivals.json...');
+        const festivalsData = JSON.parse(fs.readFileSync(festivalsPath, 'utf8'));
         
-        if (festivals.length === 0) {
-            console.log('⚠️  No festivals to import');
-            await mongoose.disconnect();
-            return;
+        if (!Array.isArray(festivalsData) || festivalsData.length === 0) {
+            console.error('❌ Invalid festivals.json format or empty array');
+            process.exit(1);
+        }
+
+        console.log(`   Found ${festivalsData.length} festivals in JSON file`);
+
+        // Transform JSON data to match Festival model
+        const festivals = festivalsData.map(festival => ({
+            name: festival.name,
+            date: new Date(festival.date),
+            year: festival.year || new Date(festival.date).getFullYear(),
+            category: festival.category || 'all',
+            isRecurring: festival.isRecurring !== undefined ? festival.isRecurring : true,
+            baseImage: festival.baseImage || { url: null, public_id: null },
+            description: festival.description || ''
+        }));
+
+        // Check if festivals already exist
+        const existingCount = await Festival.countDocuments();
+        
+        if (existingCount > 0) {
+            console.log(`\n⚠️  Database already contains ${existingCount} festivals`);
+            console.log('   Options:');
+            console.log('   1. Delete existing and import new (run deleteFestivals.js first)');
+            console.log('   2. Add new festivals without deleting existing (continuing...)\n');
+        }
+
+        console.log('📥 Importing festivals to database...');
+        
+        // Use insertMany with ordered: false to continue on duplicate errors
+        let importedCount = 0;
+        let skippedCount = 0;
+        
+        try {
+            const result = await Festival.insertMany(festivals, { ordered: false });
+            importedCount = result.length;
+        } catch (error) {
+            if (error.code === 11000) {
+                // Duplicate key errors
+                importedCount = error.insertedDocs?.length || 0;
+                skippedCount = festivals.length - importedCount;
+                console.log(`⚠️  Skipped ${skippedCount} duplicate festivals`);
+            } else {
+                throw error;
+            }
         }
         
-        // Insert festivals into database
-        console.log('💾 Inserting festivals into MongoDB...');
-        const result = await Festival.insertMany(festivals, { ordered: false });
+        console.log(`\n✅ Successfully imported ${importedCount} festivals!`);
         
-        console.log(`\n✅ Successfully imported ${result.length} festivals!`);
+        if (skippedCount > 0) {
+            console.log(`   (${skippedCount} duplicates were skipped)`);
+        }
         
         // Show category breakdown
         const categoryCount = {
             hindu: festivals.filter(f => f.category === 'hindu').length,
             muslim: festivals.filter(f => f.category === 'muslim').length,
-            other: festivals.filter(f => f.category === 'other').length,
+            other: festivals.filter(f => f.category === 'other' || f.category === 'all').length,
         };
         
         const recurringCount = festivals.filter(f => f.isRecurring).length;
@@ -208,7 +98,7 @@ async function importFestivals() {
         console.log('\n📊 Category Breakdown:');
         console.log(`   Hindu: ${categoryCount.hindu}`);
         console.log(`   Muslim: ${categoryCount.muslim}`);
-        console.log(`   Other: ${categoryCount.other}`);
+        console.log(`   Other/All: ${categoryCount.other}`);
         
         console.log('\n🔄 Date Type:');
         console.log(`   Recurring (changes yearly): ${recurringCount}`);
@@ -223,15 +113,21 @@ async function importFestivals() {
             console.log(`   - ${f.name} (${f.date.toISOString().split('T')[0]}) [${f.category}]`);
         });
         
+        // Show total count
+        const totalCount = await Festival.countDocuments();
+        console.log(`\n📊 Total festivals in database: ${totalCount}`);
+        
         await mongoose.disconnect();
         console.log('\n✅ Import complete! Database connection closed.');
         
     } catch (error) {
-        console.error('❌ Error importing festivals:', error);
+        console.error('❌ Error importing festivals:', error.message);
         await mongoose.disconnect();
         process.exit(1);
     }
 }
 
 // Run the import
+console.log('🎉 Festival Import Tool - JSON Edition');
+console.log('=====================================\n');
 importFestivals();

@@ -6,8 +6,8 @@ const auth = require('../middleware/auth');
 const router = express.Router();
 
 // Generate JWT Token
-const generateToken = (userId) => {
-    return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '30d' });
+const generateToken = (userId, role) => {
+    return jwt.sign({ userId, role }, process.env.JWT_SECRET, { expiresIn: '30d' });
 };
 
 // @route   POST /api/auth/signup
@@ -43,7 +43,7 @@ router.post('/signup', [
         await user.save();
 
         // Generate token
-        const token = generateToken(user._id);
+        const token = generateToken(user._id, user.role);
 
         res.status(201).json({
             message: 'User registered successfully',
@@ -52,6 +52,7 @@ router.post('/signup', [
                 id: user._id,
                 name: user.name,
                 email: user.email,
+                role: user.role,
                 subscription: user.subscription
             }
         });
@@ -89,7 +90,7 @@ router.post('/login', [
         }
 
         // Generate token
-        const token = generateToken(user._id);
+        const token = generateToken(user._id, user.role);
 
         res.json({
             message: 'Login successful',
@@ -98,6 +99,7 @@ router.post('/login', [
                 id: user._id,
                 name: user.name,
                 email: user.email,
+                role: user.role,
                 profile: user.profile,
                 subscription: user.subscription
             }
@@ -119,6 +121,7 @@ router.get('/me', auth, async (req, res) => {
                 name: req.user.name,
                 email: req.user.email,
                 phone: req.user.phone,
+                role: req.user.role,
                 profile: req.user.profile,
                 subscription: req.user.subscription
             }

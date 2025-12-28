@@ -2,11 +2,17 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { useAppStore } from './store';
 import { AuthLayout } from './layouts/AuthLayout';
 import { MainLayout } from './layouts/MainLayout';
+import AdminLayout from './layouts/AdminLayout';
 import { LoginPage } from './pages/LoginPage';
 import { SignupPage } from './pages/SignupPage';
 import { HomePage } from './pages/HomePage';
 import { ProfilePage } from './pages/ProfilePage';
 import { SubscriptionPage } from './pages/SubscriptionPage';
+import AdminDashboard from './pages/AdminDashboard';
+import AdminUsers from './pages/AdminUsers';
+import AdminFestivals from './pages/AdminFestivals';
+import AdminSettings from './pages/AdminSettings';
+import AdminRoute from './components/AdminRoute';
 
 const App = () => {
   const user = useAppStore((s) => s.user);
@@ -26,6 +32,21 @@ const App = () => {
         <Route path="/" element={<HomePage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/subscription" element={<SubscriptionPage />} />
+      </Route>
+
+      {/* Admin Routes */}
+      <Route
+        path="/admin"
+        element={
+          <AdminRoute>
+            <AdminLayout />
+          </AdminRoute>
+        }
+      >
+        <Route index element={<AdminDashboard />} />
+        <Route path="users" element={<AdminUsers />} />
+        <Route path="festivals" element={<AdminFestivals />} />
+        <Route path="settings" element={<AdminSettings />} />
       </Route>
 
       <Route

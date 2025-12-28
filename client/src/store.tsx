@@ -17,6 +17,8 @@ export interface SubscriptionPlan {
 export interface UserProfile {
   id: string;
   name: string;
+  email?: string;
+  role?: 'user' | 'admin';
   photoUrl?: string;
   party?: PartyInfo;
   festivalPreference?: FestivalPreference;
@@ -89,7 +91,7 @@ export const AppStoreProvider: React.FC<{ children: React.ReactNode }> = ({
   </AppStoreContext.Provider>
 );
 
-export const useAppStore: typeof useAppStoreBase = ((selector, equals) => {
+export const useAppStore: typeof useAppStoreBase = ((selector?: any, equals?: any) => {
   const ctx = useContext(AppStoreContext);
   if (!ctx) {
     throw new Error('useAppStore must be used within AppStoreProvider');
