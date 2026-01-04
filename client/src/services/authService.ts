@@ -41,4 +41,26 @@ export const authService = {
   isAuthenticated(): boolean {
     return !!storage.getToken();
   },
+
+  // Facebook OAuth - initiate login
+  loginWithFacebook(): void {
+    const serverUrl = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000';
+    window.location.href = `${serverUrl}/api/auth/facebook`;
+  },
+
+  // Handle OAuth callback
+  async handleOAuthCallback(token: string): Promise<{ user: User }> {
+    storage.setToken(token);
+    return this.getCurrentUser();
+  },
+
+  // Connect Facebook account to existing user
+  async connectFacebook(accessToken: string): Promise<{ user: User }> {
+    return api.post('/api/auth/facebook/connect', { accessToken });
+  },
+
+  // Disconnect Facebook account
+  async disconnectFacebook(): Promise<{ user: User }> {
+    return api.post('/api/auth/facebook/disconnect');
+  },
 };

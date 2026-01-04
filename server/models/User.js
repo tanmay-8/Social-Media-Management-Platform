@@ -17,12 +17,26 @@ const userSchema = new mongoose.Schema({
     },
     password: {
         type: String,
-        required: [true, 'Password is required'],
+        required: function() {
+            // Password not required for OAuth users
+            return !this.facebookId;
+        },
         minlength: [6, 'Password must be at least 6 characters']
     },
     phone: {
         type: String,
         trim: true
+    },
+    // OAuth fields
+    facebookId: {
+        type: String,
+        unique: true,
+        sparse: true // Allows multiple null values
+    },
+    authProvider: {
+        type: String,
+        enum: ['local', 'facebook'],
+        default: 'local'
     },
     role: {
         type: String,
@@ -75,13 +89,16 @@ const userSchema = new mongoose.Schema({
 
 // Hash password before saving
 userSchema.pre('save', async function(next) {
-    if (!this.isModified('password')) return next();
+    // Skip password hashing for OAuth users or if password not modified
+    if (!this.password || !this.isModified('password')) return next();
     this.password = await bcrypt.hash(this.password, 10);
     next();
 });
 
 // Compare password method
 userSchema.methods.comparePassword = async function(candidatePassword) {
+    // If no password set (OAuth user), return false
+    if (!this.password) return false;
     return await bcrypt.compare(candidatePassword, this.password);
 };
 

@@ -5,6 +5,7 @@ import { MainLayout } from './layouts/MainLayout';
 import AdminLayout from './layouts/AdminLayout';
 import { LoginPage } from './pages/LoginPage';
 import { SignupPage } from './pages/SignupPage';
+import { AuthCallbackPage } from './pages/AuthCallbackPage';
 import { HomePage } from './pages/HomePage';
 import { ProfilePage } from './pages/ProfilePage';
 import { SubscriptionPage } from './pages/SubscriptionPage';
@@ -23,6 +24,9 @@ const App = () => {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
       </Route>
+
+      {/* OAuth callback route - public */}
+      <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
       <Route
         element={

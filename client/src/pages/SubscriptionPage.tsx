@@ -1,15 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SubscriptionPlan, useAppStore } from '../store';
+import { subscriptionService } from '../services/subscriptionService';
+import { CheckCircle, Sparkles } from 'lucide-react';
 
-type Duration = 1 | 3 | 6 | 12;
-
-const PLAN_PRICES: Record<Duration, number> = {
-  1: 299,
-  3: 699,
-  6: 1199,
-  12: 1999
-};
+// Single plan pricing
+const PLAN_PRICE = 1999;
+const PLAN_DURATION = 12;
 
 declare global {
   interface Window {
@@ -21,52 +18,103 @@ export const SubscriptionPage = () => {
   const subscription = useAppStore((s) => s.subscription);
   const setSubscription = useAppStore((s) => s.setSubscription);
   const user = useAppStore((s) => s.user);
-  const [selected, setSelected] = useState<Duration>(subscription?.durationMonths ?? 3);
   const [isPaying, setIsPaying] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [loadingStatus, setLoadingStatus] = useState(false);
   const navigate = useNavigate();
+
+  // Check subscription status on mount
+  useEffect(() => {
+    checkSubscriptionStatus();
+  }, []);
+
+  const checkSubscriptionStatus = async () => {
+    setLoadingStatus(true);
+    setError(null);
+    try {
+      const status = await subscriptionService.getStatus();
+      if (status.isActive) {
+        const plan: SubscriptionPlan = {
+          durationMonths: status.durationMonths || 3,
+          active: true
+        };
+        setSubscription(plan);
+      }
+    } catch (error) {
+      console.error('Failed to check subscription status:', error);
+    } finally {
+      setLoadingStatus(false);
+    }
+  };
 
   const startCheckout = async () => {
     if (!user) return;
     setIsPaying(true);
+    setError(null);
+    
     try {
-      // In production, create an order on your backend and pass order_id here.
-      // This is frontend-only stub config.
-      const amount = PLAN_PRICES[selected] * 100; // paise
+      // Create order on backend
+      const orderData = await subscriptionService.createOrder({
+        durationMonths: PLAN_DURATION,
+        amount: PLAN_PRICE
+      });
+
       const options = {
-        key: 'RAZORPAY_KEY_HERE', // TODO: replace with env-configured key
-        amount,
-        currency: 'INR',
+        key: orderData.key,
+        amount: orderData.amount,
+        currency: orderData.currency,
         name: 'Social Media Automation',
-        description: `${selected} month plan`,
-        // order_id: 'order_DBJOWzybf0sJbb', // from backend
+        description: `Annual Subscription - ${PLAN_DURATION} months`,
+        order_id: orderData.orderId,
         prefill: {
           name: user.name,
-          email: 'user@example.com',
+          email: user.email,
           contact: '9999999999'
         },
         theme: {
-          color: '#22c55e'
+          color: '#c1121f'
         },
-        handler: (response: unknown) => {
-          console.log('Razorpay success', response);
-          const plan: SubscriptionPlan = {
-            durationMonths: selected,
-            active: true
-          };
-          setSubscription(plan);
+        handler: async (response: any) => {
+          try {
+            // Verify payment on backend
+            const result = await subscriptionService.verifyPayment({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature
+            });
+
+            if (result.success) {
+              const plan: SubscriptionPlan = {
+                durationMonths: PLAN_DURATION,
+                active: true
+              };
+              setSubscription(plan);
+              setError(null);
+            }
+          } catch (error) {
+            console.error('Payment verification failed:', error);
+            const message = error instanceof Error ? error.message : 'Payment verification failed. Please contact support.';
+            setError(message);
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            setIsPaying(false);
+          }
         }
       };
 
       if (!window.Razorpay) {
-        // eslint-disable-next-line no-alert
-        alert(
-          'Razorpay script not loaded. Include the Razorpay checkout.js script in index.html.'
-        );
+        setError('Razorpay script not loaded. Please refresh the page.');
         return;
       }
 
       const rzp = new window.Razorpay(options);
       rzp.open();
+    } catch (error) {
+      console.error('Failed to create order:', error);
+      const message = error instanceof Error ? error.message : 'Failed to initiate payment. Please try again.';
+      setError(message);
     } finally {
       setIsPaying(false);
     }
@@ -91,76 +139,158 @@ export const SubscriptionPage = () => {
         </p>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1.3fr_1fr]">
-        <section className="rounded-2xl border border-[rgba(0,48,73,0.18)] bg-[#fffaf0] p-6 shadow-[0_14px_40px_rgba(0,48,73,0.14)]">
-          <h3 className="mb-2 mt-0 text-[#003049]">Plans</h3>
-          <div className="mt-3 grid grid-cols-2 gap-3.5 sm:grid-cols-4">
-            {[1, 3, 6, 12].map((duration) => {
-              const d = duration as Duration;
-              return (
+      <div className="flex w-full justify-center">
+        {error && (
+          <div className="mb-4 w-full max-w-4xl rounded-lg bg-red-50 border border-red-200 p-4 flex items-start gap-3">
+            <div className="flex-shrink-0 w-5 h-5 rounded-full bg-red-100 flex items-center justify-center">
+              <span className="text-red-600 text-sm">✕</span>
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-red-800">Payment Error</p>
+              <p className="text-sm text-red-700 mt-1">{error}</p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="flex w-full justify-center">
+        <div className="w-full max-w-4xl grid gap-6 lg:grid-cols-[1.5fr_1fr]">
+          {/* Plan Card */}
+          <section className="rounded-3xl border-2 border-[#c1121f] bg-gradient-to-br from-[#fffaf0] to-white p-8 shadow-[0_20px_50px_rgba(193,18,31,0.15)] relative overflow-hidden">
+            {loadingStatus ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-4 border-[#669bbc] border-t-transparent"></div>
+                <span className="ml-3 text-[#003049]">Checking subscription...</span>
+              </div>
+            ) : (
+              <>
+                <div className="absolute top-4 right-4 inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[#c1121f] to-[#780000] px-3 py-1.5 text-xs font-bold text-white shadow-lg">
+                  <Sparkles className="h-3 w-3" />
+                  ANNUAL PLAN
+                </div>
+
+                <div className="mt-8 mb-6">
+                  <h2 className="text-3xl font-bold text-[#003049] mb-2">
+                    Festival Automation Pro
+                  </h2>
+                  <p className="text-[#7f7270] text-sm">
+                    Everything you need for automated festival marketing
+                  </p>
+                </div>
+
+                <div className="mb-8">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-5xl font-bold text-[#c1121f]">₹{PLAN_PRICE.toLocaleString('en-IN')}</span>
+                    <span className="text-[#7f7270]">/ year</span>
+                  </div>
+                  <p className="text-sm text-[#669bbc] mt-2">
+                    Just ₹{Math.round(PLAN_PRICE / 12).toLocaleString('en-IN')}/month
+                  </p>
+                </div>
+
+                <div className="space-y-3 mb-8">
+                  {[
+                    'Automatic festival post generation',
+                    'AI-powered image composition',
+                    'Facebook & Instagram integration',
+                    'Schedule unlimited posts',
+                    'Party logo customization',
+                    'Priority support',
+                    'All future updates included'
+                  ].map((feature, index) => (
+                    <div key={index} className="flex items-start gap-3">
+                      <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                      <span className="text-[#003049] text-sm">{feature}</span>
+                    </div>
+                  ))}
+                </div>
+
                 <button
-                  key={d}
+                  className="w-full inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border-0 bg-gradient-to-r from-[#780000] via-[#c1121f] to-[#780000] px-6 py-4 text-base font-bold text-[#fdf0d5] shadow-[0_14px_35px_rgba(120,0,0,0.45)] transition-all duration-150 hover:-translate-y-1 hover:shadow-[0_20px_50px_rgba(120,0,0,0.5)] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
                   type="button"
-                  className={
-                    'flex cursor-pointer flex-col gap-1 rounded-2xl border bg-[#fffaf0] px-3.5 py-3.5 transition-all ' +
-                    (selected === d 
-                      ? 'border-[#c1121f] shadow-[0_14px_38px_rgba(193,18,31,0.25)]' 
-                      : 'border-[rgba(0,48,73,0.25)] hover:border-[rgba(0,48,73,0.4)]')
-                  }
-                  onClick={() => setSelected(d)}
+                  onClick={startCheckout}
+                  disabled={isPaying || !user || subscription?.active}
                 >
-                  <div className="font-semibold text-[#003049]">
-                    {d} month{d > 1 ? 's' : ''}
-                  </div>
-                  <div className="text-[0.9rem] text-[#003049]">
-                    ₹{PLAN_PRICES[d].toLocaleString('en-IN')}
-                  </div>
-                  {d === 3 && <div className="inline-flex items-center gap-1 rounded-full bg-[rgba(193,18,31,0.13)] px-2.5 py-1 text-xs text-[#780000]">Popular</div>}
-                  {d === 12 && (
-                    <div className="text-xs text-[#7f7270]">Best value for agencies</div>
+                  {isPaying ? (
+                    <>
+                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-[#fdf0d5] border-t-transparent"></div>
+                      Processing Payment...
+                    </>
+                  ) : subscription?.active ? (
+                    <>
+                      <CheckCircle className="h-5 w-5" />
+                      Subscription Active
+                    </>
+                  ) : (
+                    'Subscribe Now'
                   )}
                 </button>
-              );
-            })}
-          </div>
 
-          <button
-            className="mt-4 inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-full border-0 bg-gradient-to-br from-[#780000] to-[#c1121f] px-4 py-2.5 text-[0.9rem] text-[#fdf0d5] shadow-[0_14px_35px_rgba(120,0,0,0.45)] transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[0_16px_40px_rgba(120,0,0,0.5)] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 disabled:shadow-[0_14px_35px_rgba(120,0,0,0.45)]"
-            type="button"
-            onClick={startCheckout}
-            disabled={isPaying || !user}
-          >
-            {isPaying ? 'Opening Razorpay…' : 'Pay with Razorpay'}
-          </button>
+                <p className="mt-4 text-center text-xs text-[#7f7270]">
+                  🔒 Secure payment powered by Razorpay
+                </p>
+              </>
+            )}
+          </section>
 
-          <p className="mt-2 text-xs text-[#7f7270]">
-            This is a frontend-only integration. Connect it to your backend to
-            create real Razorpay orders and verify payments.
-          </p>
-        </section>
+          {/* Status Card */}
+          <aside className="rounded-3xl border border-[rgba(0,48,73,0.18)] bg-white p-6 shadow-lg">
+            <h3 className="mb-4 text-xl font-bold text-[#003049]">
+              Subscription Status
+            </h3>
+            {subscription?.active ? (
+              <div className="space-y-4">
+                <div className="rounded-xl bg-green-50 border-2 border-green-200 p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                    <span className="font-semibold text-green-900">Active</span>
+                  </div>
+                  <p className="text-sm text-green-700">
+                    Your annual subscription is active
+                  </p>
+                </div>
+                
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-[#7f7270]">Plan</span>
+                    <span className="font-semibold text-[#003049]">Annual Pro</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-[#7f7270]">Duration</span>
+                    <span className="font-semibold text-[#003049]">{subscription.durationMonths} months</span>
+                  </div>
+                </div>
 
-        <aside className="rounded-2xl border border-[rgba(0,48,73,0.18)] bg-[#fffaf0] p-6 shadow-[0_14px_40px_rgba(0,48,73,0.14)]">
-          <h3 className="mb-2 mt-0 text-[#003049]">
-            Current subscription
-          </h3>
-          {subscription ? (
-            <div className="flex flex-col gap-1.5">
-              <span className="inline-flex w-fit items-center gap-1 rounded-full bg-[rgba(102,155,188,0.2)] px-2.5 py-1 text-xs text-[#003049]">
-                Active · {subscription.durationMonths} month
-                {subscription.durationMonths > 1 ? 's' : ''}
-              </span>
-              <p className="text-[0.8rem] text-[#7f7270]">
-                After payment verification in your backend, you can mark
-                subscriptions active and set an expiry date.
-              </p>
-            </div>
-          ) : (
-            <p className="text-[0.8rem] text-[#7f7270]">
-              No active subscription. Select a plan and complete payment to
-              activate.
-            </p>
-          )}
-        </aside>
+                <div className="pt-4 border-t border-gray-200">
+                  <p className="text-xs text-[#7f7270]">
+                    Your subscription will automatically renew. You can manage your billing in settings.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="rounded-xl bg-yellow-50 border-2 border-yellow-200 p-4">
+                  <p className="text-sm text-yellow-800 font-medium mb-2">
+                    No Active Subscription
+                  </p>
+                  <p className="text-xs text-yellow-700">
+                    Subscribe now to unlock automatic festival posting and all premium features.
+                  </p>
+                </div>
+
+                <div className="space-y-3 pt-2">
+                  <h4 className="text-sm font-semibold text-[#003049]">What you'll get:</h4>
+                  <ul className="space-y-2 text-xs text-[#7f7270]">
+                    <li>• Unlimited automated posts</li>
+                    <li>• All festivals covered</li>
+                    <li>• Custom branding</li>
+                    <li>• 24/7 support</li>
+                  </ul>
+                </div>
+              </div>
+            )}
+          </aside>
+        </div>
       </div>
     </div>
   );

@@ -20,6 +20,7 @@ export interface UserProfile {
   email?: string;
   role?: 'user' | 'admin';
   photoUrl?: string;
+  facebookId?: string;
   party?: PartyInfo;
   festivalPreference?: FestivalPreference;
 }
@@ -36,6 +37,7 @@ interface AppActions {
   updateProfile: (partial: Partial<UserProfile>) => void;
   setSubscription: (subscription: SubscriptionPlan | null) => void;
   setGeneratedPhotos: (urls: string[]) => void;
+  addGeneratedPhoto: (url: string) => void;
 }
 
 type AppStore = AppState & AppActions;
@@ -78,7 +80,9 @@ const useAppStoreBase = create<AppStore>((set) => ({
       return { user: nextUser };
     }),
   setSubscription: (subscription) => set({ subscription }),
-  setGeneratedPhotos: (urls) => set({ generatedPhotos: urls })
+  setGeneratedPhotos: (urls) => set({ generatedPhotos: urls }),
+  addGeneratedPhoto: (url) => 
+    set((state) => ({ generatedPhotos: [url, ...state.generatedPhotos] }))
 }));
 
 const AppStoreContext = createContext<typeof useAppStoreBase | null>(null);

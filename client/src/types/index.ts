@@ -4,6 +4,8 @@ export interface User {
   email: string;
   phone?: string;
   role?: 'user' | 'admin';
+  facebookId?: string;
+  authProvider?: 'local' | 'facebook';
   subscription?: {
     isActive: boolean;
     plan?: string;
