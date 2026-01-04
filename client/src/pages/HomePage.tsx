@@ -5,10 +5,12 @@ import { useNavigate } from 'react-router-dom';
 import { scheduledService } from '../services/scheduledService';
 import { festivalService } from '../services/festivalService';
 import { userService } from '../services/userService';
+import { subscriptionService } from '../services/subscriptionService';
 
 export const HomePage = () => {
   const user = useAppStore((s) => s.user);
   const subscription = useAppStore((s) => s.subscription);
+  const setSubscription = useAppStore((s) => s.setSubscription);
   const navigate = useNavigate();
   const [scheduledPosts, setScheduledPosts] = useState<any[]>([]);
   const [festivals, setFestivals] = useState<any[]>([]);
@@ -26,6 +28,25 @@ export const HomePage = () => {
     setError(null);
 
     try {
+      // First, fetch subscription status from backend
+      let hasActiveSubscription = false;
+      try {
+        const status = await subscriptionService.getStatus();
+        console.log('Subscription status:', status);
+        if (status.subscription.isActive) {
+          hasActiveSubscription = true;
+          setSubscription({
+            durationMonths: status.durationMonths || 12,
+            active: true
+          });
+        } else {
+          setSubscription(null);
+        }
+      } catch (subError) {
+        console.error('Failed to fetch subscription:', subError);
+        setSubscription(null);
+      }
+
       // Check if user has Facebook connected
       if (!user?.facebookId) {
         setError('Please connect your Facebook account to use automatic posting.');
@@ -36,7 +57,7 @@ export const HomePage = () => {
       }
 
       // Check if user has active subscription
-      if (!subscription?.active) {
+      if (!hasActiveSubscription) {
         setError('Please purchase a subscription to enable automatic posting.');
         setTimeout(() => {
           navigate('/subscription');
