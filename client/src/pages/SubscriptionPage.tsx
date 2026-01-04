@@ -56,7 +56,7 @@ export const SubscriptionPage = () => {
       // Create order on backend
       const orderData = await subscriptionService.createOrder({
         durationMonths: PLAN_DURATION,
-        amount: PLAN_PRICE
+        amount: PLAN_PRICE * 100 // Convert to paise
       });
 
       const options = {
@@ -80,7 +80,8 @@ export const SubscriptionPage = () => {
             const result = await subscriptionService.verifyPayment({
               razorpay_order_id: response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature
+              razorpay_signature: response.razorpay_signature,
+              durationMonths: PLAN_DURATION
             });
 
             if (result.success) {
@@ -90,11 +91,19 @@ export const SubscriptionPage = () => {
               };
               setSubscription(plan);
               setError(null);
+              // Navigate to home after successful payment
+              setTimeout(() => {
+                navigate('/');
+              }, 1500);
+            } else {
+              setError(result.message || 'Payment verification failed');
             }
           } catch (error) {
             console.error('Payment verification failed:', error);
             const message = error instanceof Error ? error.message : 'Payment verification failed. Please contact support.';
             setError(message);
+          } finally {
+            setIsPaying(false);
           }
         },
         modal: {
@@ -106,6 +115,7 @@ export const SubscriptionPage = () => {
 
       if (!window.Razorpay) {
         setError('Razorpay script not loaded. Please refresh the page.');
+        setIsPaying(false);
         return;
       }
 
@@ -115,7 +125,6 @@ export const SubscriptionPage = () => {
       console.error('Failed to create order:', error);
       const message = error instanceof Error ? error.message : 'Failed to initiate payment. Please try again.';
       setError(message);
-    } finally {
       setIsPaying(false);
     }
   };

@@ -10,7 +10,7 @@ export interface PartyInfo {
 }
 
 export interface SubscriptionPlan {
-  durationMonths: 1 | 3 | 6 | 12;
+  plan?: string;
   active: boolean;
 }
 

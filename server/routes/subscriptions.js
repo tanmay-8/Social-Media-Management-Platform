@@ -37,21 +37,20 @@ router.post('/create-order', auth, async (req, res) => {
             return res.status(503).json({ message: 'Payment gateway not configured. Please contact administrator.' });
         }
 
-        const { plan } = req.body;
+        const { durationMonths, amount } = req.body;
 
-        if (!plan || !['3months', '6months', '12months'].includes(plan)) {
-            return res.status(400).json({ message: 'Invalid plan selected' });
+        if (!durationMonths || !amount) {
+            return res.status(400).json({ message: 'Duration and amount are required' });
         }
 
-        const amount = PLAN_PRICES[plan];
+        // Amount should already be in paise from frontend
         const options = {
             amount: amount,
             currency: 'INR',
             receipt: `receipt_${req.user._id}_${Date.now()}`,
             notes: {
                 userId: req.user._id.toString(),
-                plan: plan,
-                duration: PLAN_DURATIONS[plan]
+                durationMonths: durationMonths
             }
         };
 
@@ -61,7 +60,7 @@ router.post('/create-order', auth, async (req, res) => {
             orderId: order.id,
             amount: order.amount,
             currency: order.currency,
-            keyId: process.env.RAZORPAY_KEY_ID
+            key: process.env.RAZORPAY_KEY_ID
         });
     } catch (error) {
         console.error('Create order error:', error);
@@ -74,26 +73,37 @@ router.post('/create-order', auth, async (req, res) => {
 // @access  Private
 router.post('/verify-payment', auth, async (req, res) => {
     try {
-        const { orderId, paymentId, signature, plan } = req.body;
+        const { razorpay_order_id, razorpay_payment_id, razorpay_signature, durationMonths } = req.body;
 
-        if (!orderId || !paymentId || !signature || !plan) {
-            return res.status(400).json({ message: 'Missing payment details' });
+        if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature || !durationMonths) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'Missing payment details' 
+            });
         }
 
         // Verify payment signature
         const generatedSignature = crypto
             .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
-            .update(orderId + '|' + paymentId)
+            .update(razorpay_order_id + '|' + razorpay_payment_id)
             .digest('hex');
 
-        if (generatedSignature !== signature) {
-            return res.status(400).json({ message: 'Invalid payment signature' });
+        if (generatedSignature !== razorpay_signature) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'Invalid payment signature' 
+            });
         }
 
         // Calculate subscription dates
         const startDate = new Date();
         const endDate = new Date();
-        endDate.setMonth(endDate.getMonth() + PLAN_DURATIONS[plan]);
+        endDate.setMonth(endDate.getMonth() + durationMonths);
+
+        // Determine plan based on duration
+        let plan = '12months';
+        if (durationMonths === 3) plan = '3months';
+        else if (durationMonths === 6) plan = '6months';
 
         // Update user subscription
         const user = await User.findByIdAndUpdate(
@@ -103,9 +113,9 @@ router.post('/verify-payment', auth, async (req, res) => {
                     'subscription.plan': plan,
                     'subscription.startDate': startDate,
                     'subscription.endDate': endDate,
-                    'subscription.razorpayOrderId': orderId,
-                    'subscription.razorpayPaymentId': paymentId,
-                    'subscription.razorpaySignature': signature,
+                    'subscription.razorpayOrderId': razorpay_order_id,
+                    'subscription.razorpayPaymentId': razorpay_payment_id,
+                    'subscription.razorpaySignature': razorpay_signature,
                     'subscription.isActive': true,
                     updatedAt: new Date()
                 }
@@ -139,12 +149,16 @@ router.post('/verify-payment', auth, async (req, res) => {
         }
 
         res.json({
+            success: true,
             message: 'Subscription activated successfully',
             subscription: user.subscription
         });
     } catch (error) {
         console.error('Verify payment error:', error);
-        res.status(500).json({ message: 'Error verifying payment' });
+        res.status(500).json({ 
+            success: false,
+            message: 'Error verifying payment' 
+        });
     }
 });
 

@@ -33,10 +33,10 @@ export const HomePage = () => {
       try {
         const status = await subscriptionService.getStatus();
         console.log('Subscription status:', status);
-        if (status.subscription.isActive) {
+        if (status.isActive) {
           hasActiveSubscription = true;
           setSubscription({
-            durationMonths: status.durationMonths || 12,
+            plan: status.plan || 'unknown',
             active: true
           });
         } else {

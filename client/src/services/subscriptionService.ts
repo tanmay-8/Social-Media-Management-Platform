@@ -1,31 +1,60 @@
-import { api } from './api';
+import { api } from "./api";
 
-export interface SubscriptionOrder {
-  plan: '3months' | '6months' | '12months';
+export interface CreateOrderRequest {
+    durationMonths: number;
+    amount: number;
 }
 
-export interface VerifyPayment {
-  razorpay_order_id: string;
-  razorpay_payment_id: string;
-  razorpay_signature: string;
+export interface CreateOrderResponse {
+    orderId: string;
+    amount: number;
+    currency: string;
+    key: string;
+}
+
+export interface VerifyPaymentRequest {
+    razorpay_order_id: string;
+    razorpay_payment_id: string;
+    razorpay_signature: string;
+    durationMonths: number;
+}
+
+export interface VerifyPaymentResponse {
+    success: boolean;
+    message: string;
+    subscription?: any;
+}
+
+export interface SubscriptionStatusResponse {
+    isActive: boolean;
+    plan?: string;
 }
 
 export const subscriptionService = {
-  // Create Razorpay order
-  async createOrder(plan: '3months' | '6months' | '12months') {
-    return api.post<{ orderId: string; amount: number; currency: string; key: string }>(
-      '/api/subscriptions/create-order',
-      { plan }
-    );
-  },
+    // Create Razorpay order
+    async createOrder(data: CreateOrderRequest): Promise<CreateOrderResponse> {
+        return api.post<CreateOrderResponse>(
+            "/api/subscriptions/create-order",
+            data
+        );
+    },
 
-  // Verify payment
-  async verifyPayment(data: VerifyPayment) {
-    return api.post('/api/subscriptions/verify-payment', data);
-  },
+    // Verify payment
+    async verifyPayment(
+        data: VerifyPaymentRequest
+    ): Promise<VerifyPaymentResponse> {
+        return api.post<VerifyPaymentResponse>(
+            "/api/subscriptions/verify-payment",
+            data
+        );
+    },
 
-  // Get subscription status
-  async getStatus() {
-    return api.get('/api/subscriptions/status');
-  },
+    // Get subscription status
+    async getStatus(): Promise<SubscriptionStatusResponse> {
+        const response = await api.get<any>("/api/subscriptions/status");
+        return {
+            isActive: response.subscription?.isActive || false,
+            plan: response.subscription?.plan,
+        };
+    },
 };
