@@ -174,7 +174,11 @@ async function autoScheduleFestivalsForToday() {
                         festival: festival._id,
                         scheduledAt: postTime,
                         status: 'pending',
-                        attempts: 0
+                        attempts: 0,
+                        platforms: {
+                            facebook: { status: 'pending' },
+                            instagram: { status: 'pending' }
+                        }
                     });
                     
                     await scheduledPost.save();

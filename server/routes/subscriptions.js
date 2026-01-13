@@ -174,7 +174,11 @@ router.post('/verify-payment', auth, async (req, res) => {
                 user: user._id,
                 festival: f._id,
                 scheduledAt: f.date,
-                status: 'pending'
+                status: 'pending',
+                platforms: {
+                    facebook: { status: 'pending' },
+                    instagram: { status: 'pending' }
+                }
             }));
 
             if (scheduledDocs.length) {

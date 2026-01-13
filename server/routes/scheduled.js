@@ -49,7 +49,11 @@ router.post('/', auth, async (req, res) => {
             user: req.user._id,
             festival: festivalId,
             scheduledAt: scheduledAt ? new Date(scheduledAt) : new Date(),
-            status: 'pending'
+            status: 'pending',
+            platforms: {
+                facebook: { status: 'pending' },
+                instagram: { status: 'pending' }
+            }
         });
         await scheduled.save();
 
