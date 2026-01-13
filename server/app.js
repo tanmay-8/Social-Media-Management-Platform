@@ -6,10 +6,20 @@ require('dotenv').config();
 
 const app = express();
 
+// Trust proxy (needed for rate limiting behind reverse proxy)
+app.set('trust proxy', 1);
+
+// CORS Configuration
+const corsOptions = {
+  origin: process.env.CORS_ALLOWED_ORIGIN || 'http://localhost:5173',
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+
 // Middleware
 app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(express.static('public'));
 
 // Routes
@@ -89,6 +99,10 @@ mongoose.connect(MONGODB_URI)
         // Start auto-posting scheduler
         const { startScheduler } = require('./utils/autoPostScheduler');
         startScheduler();
+        
+        // Start festival auto-scheduling
+        const { startFestivalScheduler } = require('./utils/autoScheduleFestivals');
+        startFestivalScheduler();
         
         app.listen(PORT, () => {
             console.log(`Server running on port ${PORT}`);

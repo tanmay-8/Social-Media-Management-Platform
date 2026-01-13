@@ -54,6 +54,7 @@ const userSchema = new mongoose.Schema({
         },
         // Stored tokens for social posting (consider encrypting these in production)
         facebookAccessToken: String,
+        facebookPageAccessToken: String,
         instagramAccessToken: String,
         festivalCategory: {
             type: String,

@@ -6,7 +6,22 @@ const scheduledPostSchema = new mongoose.Schema({
     scheduledAt: { type: Date, required: true },
     status: { type: String, enum: ['pending','posted','failed','skipped'], default: 'pending' },
     attempts: { type: Number, default: 0 },
-    result: { type: mongoose.Schema.Types.Mixed },
+    autoCreated: { type: Boolean, default: false }, // Tracks if created by auto-scheduler
+    platforms: { 
+        facebook: { 
+            status: { type: String, enum: ['pending','posted','failed'], default: 'pending' },
+            mediaId: String,
+            error: String,
+            postedAt: Date
+        },
+        instagram: { 
+            status: { type: String, enum: ['pending','posted','failed'], default: 'pending' },
+            mediaId: String,
+            error: String,
+            postedAt: Date
+        }
+    },
+    result: { type: mongoose.Schema.Types.Mixed }, // For backward compatibility
     createdAt: { type: Date, default: Date.now }
 });
 

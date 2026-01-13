@@ -34,14 +34,22 @@ const PLAN_PRICES = {
 router.post('/create-order', auth, async (req, res) => {
     try {
         if (!razorpay) {
+            console.error('❌ Razorpay not configured - missing credentials');
             return res.status(503).json({ message: 'Payment gateway not configured. Please contact administrator.' });
         }
 
         const { durationMonths, amount } = req.body;
 
         if (!durationMonths || !amount) {
+            console.error('❌ Missing required fields:', { durationMonths, amount });
             return res.status(400).json({ message: 'Duration and amount are required' });
         }
+
+        console.log('📝 Creating Razorpay order:', { 
+            userId: req.user._id, 
+            durationMonths, 
+            amount: `₹${amount / 100}` 
+        });
 
         // Amount should already be in paise from frontend
         const options = {
@@ -55,6 +63,7 @@ router.post('/create-order', auth, async (req, res) => {
         };
 
         const order = await razorpay.orders.create(options);
+        console.log('✅ Razorpay order created:', order.id);
 
         res.json({
             orderId: order.id,
@@ -63,7 +72,7 @@ router.post('/create-order', auth, async (req, res) => {
             key: process.env.RAZORPAY_KEY_ID
         });
     } catch (error) {
-        console.error('Create order error:', error);
+        console.error('❌ Create order error:', error);
         res.status(500).json({ message: 'Error creating order' });
     }
 });
@@ -75,7 +84,19 @@ router.post('/verify-payment', auth, async (req, res) => {
     try {
         const { razorpay_order_id, razorpay_payment_id, razorpay_signature, durationMonths } = req.body;
 
+        console.log('🔍 Verifying payment:', { 
+            orderId: razorpay_order_id, 
+            paymentId: razorpay_payment_id,
+            userId: req.user._id 
+        });
+
         if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature || !durationMonths) {
+            console.error('❌ Missing payment details:', { 
+                hasOrderId: !!razorpay_order_id,
+                hasPaymentId: !!razorpay_payment_id,
+                hasSignature: !!razorpay_signature,
+                hasDuration: !!durationMonths
+            });
             return res.status(400).json({ 
                 success: false,
                 message: 'Missing payment details' 
@@ -89,21 +110,30 @@ router.post('/verify-payment', auth, async (req, res) => {
             .digest('hex');
 
         if (generatedSignature !== razorpay_signature) {
+            console.error('❌ Invalid payment signature');
             return res.status(400).json({ 
                 success: false,
                 message: 'Invalid payment signature' 
             });
         }
 
+        console.log('✅ Payment signature verified');
+
         // Calculate subscription dates
         const startDate = new Date();
         const endDate = new Date();
-        endDate.setMonth(endDate.getMonth() + durationMonths);
+        endDate.setMonth(endDate.getMonth() + parseInt(durationMonths));
 
         // Determine plan based on duration
         let plan = '12months';
         if (durationMonths === 3) plan = '3months';
         else if (durationMonths === 6) plan = '6months';
+
+        console.log('📅 Subscription dates:', { 
+            plan, 
+            startDate: startDate.toISOString(), 
+            endDate: endDate.toISOString() 
+        });
 
         // Update user subscription
         const user = await User.findByIdAndUpdate(
@@ -123,16 +153,22 @@ router.post('/verify-payment', auth, async (req, res) => {
             { new: true }
         ).select('-password');
 
+        console.log('✅ User subscription updated');
+
         // Create scheduled posts for festivals within subscription period matching user's category
         try {
             const Festival = require('../models/Festival');
             const ScheduledPost = require('../models/ScheduledPost');
 
             const userCategory = user.profile?.festivalCategory || 'all';
+            console.log('🎉 Creating scheduled posts for category:', userCategory);
+            
             const festivals = await Festival.find({
                 date: { $gte: startDate, $lte: endDate },
                 ...(userCategory !== 'all' ? { category: userCategory } : {})
             });
+
+            console.log(`📅 Found ${festivals.length} festivals in subscription period`);
 
             const scheduledDocs = festivals.map(f => ({
                 user: user._id,
@@ -143,9 +179,10 @@ router.post('/verify-payment', auth, async (req, res) => {
 
             if (scheduledDocs.length) {
                 await ScheduledPost.insertMany(scheduledDocs);
+                console.log(`✅ Created ${scheduledDocs.length} scheduled posts`);
             }
         } catch (err) {
-            console.error('Error creating scheduled posts after subscription:', err);
+            console.error('⚠️ Error creating scheduled posts after subscription:', err);
         }
 
         res.json({
@@ -154,7 +191,7 @@ router.post('/verify-payment', auth, async (req, res) => {
             subscription: user.subscription
         });
     } catch (error) {
-        console.error('Verify payment error:', error);
+        console.error('❌ Verify payment error:', error);
         res.status(500).json({ 
             success: false,
             message: 'Error verifying payment' 
@@ -179,8 +216,17 @@ router.get('/status', auth, async (req, res) => {
             }
         }
 
+        // Calculate duration in months from plan
+        let durationMonths = 0;
+        if (user.subscription.plan && PLAN_DURATIONS[user.subscription.plan]) {
+            durationMonths = PLAN_DURATIONS[user.subscription.plan];
+        }
+
         res.json({
-            subscription: user.subscription,
+            subscription: {
+                ...user.subscription.toObject(),
+                durationMonths // Add calculated durationMonths field
+            },
             plans: {
                 '3months': { price: PLAN_PRICES['3months'] / 100, duration: PLAN_DURATIONS['3months'] },
                 '6months': { price: PLAN_PRICES['6months'] / 100, duration: PLAN_DURATIONS['6months'] },

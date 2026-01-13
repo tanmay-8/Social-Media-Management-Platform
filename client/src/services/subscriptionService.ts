@@ -28,6 +28,9 @@ export interface VerifyPaymentResponse {
 export interface SubscriptionStatusResponse {
     isActive: boolean;
     plan?: string;
+    durationMonths?: number;
+    startDate?: string;
+    endDate?: string;
 }
 
 export const subscriptionService = {
@@ -55,6 +58,9 @@ export const subscriptionService = {
         return {
             isActive: response.subscription?.isActive || false,
             plan: response.subscription?.plan,
+            durationMonths: response.subscription?.durationMonths,
+            startDate: response.subscription?.startDate,
+            endDate: response.subscription?.endDate,
         };
     },
 };

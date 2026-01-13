@@ -68,65 +68,115 @@ async function processScheduledPost(scheduledPost) {
         console.log(`✅ Image composed: ${composedImage.secure_url}`);
 
         const caption = `${festival.name}\n\n#festival #celebration`;
-        const postResults = [];
+
+        // Initialize platforms tracking if not exists
+        if (!scheduledPost.platforms) {
+            scheduledPost.platforms = {
+                facebook: { status: 'pending' },
+                instagram: { status: 'pending' }
+            };
+        }
 
         // Step 2: Post to Instagram (if connected)
         if (user.profile?.instagramAccessToken && user.profile?.instagramBusinessId) {
             console.log('📸 Posting to Instagram...');
-            const instagramResult = await postToInstagram(
-                user.profile.instagramAccessToken,
-                user.profile.instagramBusinessId,
-                composedImage.secure_url,
-                caption
-            );
-            postResults.push(instagramResult);
+            try {
+                const instagramResult = await postToInstagram(
+                    user.profile.instagramAccessToken,
+                    user.profile.instagramBusinessId,
+                    composedImage.secure_url,
+                    caption
+                );
 
-            if (instagramResult.success) {
-                console.log('✅ Posted to Instagram!');
-            } else {
-                console.error('❌ Instagram post failed:', instagramResult.error);
+                if (instagramResult.success) {
+                    console.log('✅ Posted to Instagram!');
+                    scheduledPost.platforms.instagram = {
+                        status: 'posted',
+                        mediaId: instagramResult.mediaId,
+                        postedAt: new Date()
+                    };
+                } else {
+                    console.error('❌ Instagram post failed:', instagramResult.error);
+                    scheduledPost.platforms.instagram = {
+                        status: 'failed',
+                        error: instagramResult.error
+                    };
+                }
+            } catch (error) {
+                console.error('❌ Instagram posting exception:', error.message);
+                scheduledPost.platforms.instagram = {
+                    status: 'failed',
+                    error: error.message
+                };
             }
         } else {
             console.log('⏭️  Instagram not connected, skipping...');
+            scheduledPost.platforms.instagram = { status: 'pending' };
         }
 
         // Step 3: Post to Facebook (if connected)
-        if (user.profile?.facebookAccessToken && user.profile?.facebookPageId) {
+        if (user.profile?.facebookPageAccessToken && user.profile?.facebookPageId) {
             console.log('📘 Posting to Facebook...');
-            const facebookResult = await postToFacebook(
-                user.profile.facebookAccessToken,
-                user.profile.facebookPageId,
-                composedImage.secure_url,
-                caption
-            );
-            postResults.push(facebookResult);
+            try {
+                const facebookResult = await postToFacebook(
+                    user.profile.facebookPageAccessToken,
+                    user.profile.facebookPageId,
+                    composedImage.secure_url,
+                    caption
+                );
 
-            if (facebookResult.success) {
-                console.log('✅ Posted to Facebook!');
-            } else {
-                console.error('❌ Facebook post failed:', facebookResult.error);
+                if (facebookResult.success) {
+                    console.log('✅ Posted to Facebook!');
+                    scheduledPost.platforms.facebook = {
+                        status: 'posted',
+                        mediaId: facebookResult.postId,
+                        postedAt: new Date()
+                    };
+                } else {
+                    console.error('❌ Facebook post failed:', facebookResult.error);
+                    scheduledPost.platforms.facebook = {
+                        status: 'failed',
+                        error: facebookResult.error
+                    };
+                }
+            } catch (error) {
+                console.error('❌ Facebook posting exception:', error.message);
+                scheduledPost.platforms.facebook = {
+                    status: 'failed',
+                    error: error.message
+                };
             }
         } else {
             console.log('⏭️  Facebook not connected, skipping...');
+            scheduledPost.platforms.facebook = { status: 'pending' };
         }
 
-        // Update scheduled post status
-        const successCount = postResults.filter(r => r.success).length;
+        // Update scheduled post status based on platform results
+        const successCount = Object.values(scheduledPost.platforms).filter(p => p.status === 'posted').length;
+        const totalPlatforms = Object.values(scheduledPost.platforms).filter(p => p.status !== 'pending').length;
         
         if (successCount > 0) {
             scheduledPost.status = 'posted';
             scheduledPost.result = {
                 composedImageUrl: composedImage.secure_url,
-                posts: postResults,
+                platforms: scheduledPost.platforms,
                 postedAt: new Date()
             };
-            console.log(`✅ Successfully posted to ${successCount} platform(s)!`);
+            console.log(`✅ Successfully posted to ${successCount}/${totalPlatforms} platform(s)!`);
+        } else if (totalPlatforms === 0) {
+            // No platforms connected
+            scheduledPost.status = 'skipped';
+            scheduledPost.result = {
+                reason: 'No social media platforms connected'
+            };
+            console.log('⏭️  Skipped: No platforms connected');
         } else {
+            // Some or all platforms failed
             scheduledPost.status = 'failed';
             scheduledPost.result = {
                 composedImageUrl: composedImage.secure_url,
-                posts: postResults,
-                error: 'All platforms failed'
+                platforms: scheduledPost.platforms,
+                error: `Failed on all ${totalPlatforms} connected platform(s)`
             };
             console.error('❌ All platforms failed');
         }

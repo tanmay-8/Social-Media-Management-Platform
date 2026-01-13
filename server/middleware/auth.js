@@ -23,6 +23,30 @@ const auth = async (req, res, next) => {
     }
 };
 
+// Optional auth middleware - doesn't fail if no token, just sets req.user if available
+auth.optional = async (req, res, next) => {
+    try {
+        // Try to get token from header, cookie, or query parameter
+        const token = req.header('Authorization')?.replace('Bearer ', '') 
+                   || req.cookies?.token 
+                   || req.query?.token;
+        
+        if (token) {
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+            const user = await User.findById(decoded.userId).select('-password');
+            
+            if (user) {
+                req.user = user;
+            }
+        }
+    } catch (error) {
+        // Silently fail - this is optional auth
+        console.log('Optional auth failed (non-critical):', error.message);
+    }
+    
+    next();
+};
+
 module.exports = auth;
 
 

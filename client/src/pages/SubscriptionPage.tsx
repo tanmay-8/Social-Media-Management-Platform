@@ -21,6 +21,7 @@ export const SubscriptionPage = () => {
   const [isPaying, setIsPaying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loadingStatus, setLoadingStatus] = useState(false);
+  const [subscriptionEndDate, setSubscriptionEndDate] = useState<string | null>(null);
   const navigate = useNavigate();
 
   // Check subscription status on mount
@@ -35,24 +36,42 @@ export const SubscriptionPage = () => {
       const status = await subscriptionService.getStatus();
       if (status.isActive) {
         const plan: SubscriptionPlan = {
-          durationMonths: status.durationMonths || 3,
+          durationMonths: status.durationMonths || 12,
           active: true
         };
         setSubscription(plan);
+        if (status.endDate) {
+          setSubscriptionEndDate(new Date(status.endDate).toLocaleDateString('en-IN', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+          }));
+        }
       }
     } catch (error) {
       console.error('Failed to check subscription status:', error);
+      const message = error instanceof Error ? error.message : 'Failed to load subscription status';
+      setError(message);
     } finally {
       setLoadingStatus(false);
     }
   };
 
   const startCheckout = async () => {
-    if (!user) return;
+    if (!user) {
+      setError('Please login to subscribe');
+      return;
+    }
+    
     setIsPaying(true);
     setError(null);
     
     try {
+      // Check if Razorpay is available
+      if (!window.Razorpay) {
+        throw new Error('Razorpay is not loaded. Please refresh the page and try again.');
+      }
+
       // Create order on backend
       const orderData = await subscriptionService.createOrder({
         durationMonths: PLAN_DURATION,
@@ -91,6 +110,10 @@ export const SubscriptionPage = () => {
               };
               setSubscription(plan);
               setError(null);
+              
+              // Refresh subscription status to get end date
+              await checkSubscriptionStatus();
+              
               // Navigate to home after successful payment
               setTimeout(() => {
                 navigate('/');
@@ -113,13 +136,13 @@ export const SubscriptionPage = () => {
         }
       };
 
-      if (!window.Razorpay) {
-        setError('Razorpay script not loaded. Please refresh the page.');
-        setIsPaying(false);
-        return;
-      }
-
       const rzp = new window.Razorpay(options);
+      rzp.on('payment.failed', function (response: any) {
+        console.error('Payment failed:', response.error);
+        setError(`Payment failed: ${response.error.description || 'Please try again'}`);
+        setIsPaying(false);
+      });
+      
       rzp.open();
     } catch (error) {
       console.error('Failed to create order:', error);
@@ -268,6 +291,12 @@ export const SubscriptionPage = () => {
                     <span className="text-[#7f7270]">Duration</span>
                     <span className="font-semibold text-[#003049]">{subscription.durationMonths} months</span>
                   </div>
+                  {subscriptionEndDate && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-[#7f7270]">Valid Until</span>
+                      <span className="font-semibold text-[#003049]">{subscriptionEndDate}</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="pt-4 border-t border-gray-200">

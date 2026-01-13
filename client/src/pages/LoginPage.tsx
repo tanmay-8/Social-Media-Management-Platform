@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAppStore } from '../store';
 import { authService } from '../services/authService';
 import { AlertCircle, ArrowRight, Loader2 } from 'lucide-react';
@@ -12,6 +12,7 @@ interface LoginFormValues {
 
 export const LoginPage = () => {
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
   const {
     register,
     handleSubmit,
@@ -25,7 +26,13 @@ export const LoginPage = () => {
     if (currentUser) {
       navigate('/', { replace: true });
     }
-  }, [currentUser, navigate]);
+    
+    // Check for OAuth error in URL
+    const error = searchParams.get('error');
+    if (error) {
+      setSubmitError(decodeURIComponent(error).replace(/_/g, ' '));
+    }
+  }, [currentUser, navigate, searchParams]);
 
   const onSubmit = async (data: LoginFormValues) => {
     setSubmitError(null);
@@ -115,16 +122,16 @@ export const LoginPage = () => {
         )}
       </button>
 
-      <div className="relative my-2">
+      {/* <div className="relative my-2">
         <div className="absolute inset-0 flex items-center">
           <div className="w-full border-t border-[rgba(0,48,73,0.1)]"></div>
         </div>
         <div className="relative flex justify-center text-xs">
           <span className="bg-white px-4 text-[#7f7270]">Or continue with</span>
         </div>
-      </div>
+      </div> */}
 
-      <button
+      {/* <button
         type="button"
         className="group inline-flex w-full cursor-pointer items-center justify-center gap-3 rounded-xl border-2 border-[rgba(0,48,73,0.15)] bg-white px-4 py-3 text-[0.95rem] font-medium text-[#003049] transition-all duration-200 hover:border-[#1877F2] hover:bg-[#f8f9fa] hover:shadow-md"
         onClick={handleFacebookLogin}
@@ -133,7 +140,7 @@ export const LoginPage = () => {
           <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
         </svg>
         Continue with Facebook
-      </button>
+      </button> */}
     </form>
   );
 };

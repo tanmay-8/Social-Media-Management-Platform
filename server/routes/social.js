@@ -19,9 +19,6 @@ const { postToFacebook, validateFacebookToken, getUserPages, getPageAccessToken 
  *           schema:
  *             type: object
  *             properties:
- *               accessToken:
- *                 type: string
- *                 description: Facebook access token from OAuth flow
  *               pageId:
  *                 type: string
  *                 description: Facebook Page ID to post to
@@ -31,52 +28,66 @@ const { postToFacebook, validateFacebookToken, getUserPages, getPageAccessToken 
  */
 router.post('/connect/facebook', auth, async (req, res) => {
     try {
-        const { accessToken, pageId } = req.body;
+        const { pageId } = req.body;
 
-        if (!accessToken) {
-            return res.status(400).json({ message: 'Access token is required' });
+        if (!pageId) {
+            return res.status(400).json({ message: 'Page ID is required' });
         }
 
-        // Validate token
-        const validation = await validateFacebookToken(accessToken);
+        // Get user's stored Facebook access token
+        const userAccessToken = req.user.profile?.facebookAccessToken;
+        if (!userAccessToken) {
+            return res.status(400).json({ message: 'No Facebook account connected. Please connect your Facebook account first.' });
+        }
+
+        console.log('🔵 Connecting Facebook page:', pageId);
+        console.log('User ID:', req.user._id);
+
+        // Validate token is still valid
+        const validation = await validateFacebookToken(userAccessToken);
         if (!validation.valid) {
-            return res.status(401).json({ message: 'Invalid Facebook access token', error: validation.error });
+            return res.status(401).json({ message: 'Facebook access token expired. Please reconnect your account.', error: validation.error });
         }
 
-        // Get page access token if pageId provided
-        let pageAccessToken = accessToken;
-        if (pageId) {
-            const pageTokenResult = await getPageAccessToken(accessToken, pageId);
-            if (pageTokenResult.success) {
-                pageAccessToken = pageTokenResult.pageAccessToken;
-            }
+        // Get page access token using user's access token
+        console.log('🔵 Getting page access token...');
+        const pageTokenResult = await getPageAccessToken(userAccessToken, pageId);
+        if (!pageTokenResult.success) {
+            console.error('❌ Failed to get page access token:', pageTokenResult.error);
+            return res.status(400).json({ message: 'Failed to connect page', error: pageTokenResult.error });
         }
 
-        // Update user profile
+        const pageAccessToken = pageTokenResult.pageAccessToken;
+        console.log('✅ Got page access token');
+
+        // Update user profile with page info
+        console.log('🔵 Updating user profile...');
         const user = await User.findByIdAndUpdate(
             req.user._id,
             {
                 $set: {
-                    'profile.facebookAccessToken': pageAccessToken,
-                    'profile.facebookPageId': pageId || validation.data.id,
+                    'profile.facebookPageId': pageId,
+                    'profile.facebookPageAccessToken': pageAccessToken,
                     updatedAt: new Date()
                 }
             },
             { new: true }
         ).select('-password');
 
+        console.log('✅ Successfully connected page');
+
         res.json({
-            message: 'Facebook account connected successfully',
+            message: 'Facebook page connected successfully',
             user: {
                 id: user._id,
-                name: validation.data.name,
-                facebookPageId: pageId || validation.data.id
+                name: user.name,
+                facebookPageId: pageId
             }
         });
 
     } catch (error) {
-        console.error('Facebook connection error:', error);
-        res.status(500).json({ message: 'Failed to connect Facebook account', error: error.message });
+        console.error('❌ Facebook page connection error:', error);
+        res.status(500).json({ message: 'Failed to connect Facebook page', error: error.message });
     }
 });
 
@@ -164,30 +175,28 @@ router.post('/connect/instagram', auth, async (req, res) => {
  *     summary: Get user's Facebook pages
  *     security:
  *       - bearerAuth: []
- *     parameters:
- *       - in: query
- *         name: accessToken
- *         schema:
- *           type: string
- *         required: true
  *     responses:
  *       200:
  *         description: List of Facebook pages
  */
 router.get('/pages', auth, async (req, res) => {
     try {
-        const { accessToken } = req.query;
+        // Get access token from user's profile
+        const accessToken = req.user.profile?.facebookAccessToken;
 
         if (!accessToken) {
-            return res.status(400).json({ message: 'Access token is required' });
+            return res.status(400).json({ message: 'No Facebook account connected. Please connect your Facebook account first.' });
         }
 
+        console.log('🔵 Fetching Facebook pages for user:', req.user._id);
         const result = await getUserPages(accessToken);
 
         if (!result.success) {
+            console.error('❌ Failed to fetch pages:', result.error);
             return res.status(400).json({ message: 'Failed to fetch pages', error: result.error });
         }
 
+        console.log('✅ Successfully fetched', result.pages.length, 'pages');
         res.json({
             message: 'Pages fetched successfully',
             pages: result.pages
@@ -260,15 +269,16 @@ router.post('/post/test', auth, async (req, res) => {
 
         // Post to Facebook
         if (platforms.includes('facebook')) {
-            if (!user.profile?.facebookAccessToken || !user.profile?.facebookPageId) {
+            if (!user.profile?.facebookPageAccessToken || !user.profile?.facebookPageId) {
                 results.push({
                     platform: 'facebook',
                     success: false,
-                    error: 'Facebook account not connected'
+                    error: 'Facebook page not connected. Please connect a Facebook page first.'
                 });
             } else {
+                console.log('📘 Posting to Facebook page:', user.profile.facebookPageId);
                 const facebookResult = await postToFacebook(
-                    user.profile.facebookAccessToken,
+                    user.profile.facebookPageAccessToken,
                     user.profile.facebookPageId,
                     imageUrl,
                     caption || ''
@@ -289,6 +299,144 @@ router.post('/post/test', auth, async (req, res) => {
     } catch (error) {
         console.error('Test post error:', error);
         res.status(500).json({ message: 'Failed to post', error: error.message });
+    }
+});
+
+/**
+ * @swagger
+ * /api/social/instagram/connect:
+ *   post:
+ *     summary: Connect Instagram Business Account
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               accessToken:
+ *                 type: string
+ *                 description: Instagram access token (from Facebook OAuth)
+ *     responses:
+ *       200:
+ *         description: Instagram account connected
+ */
+router.post('/instagram/connect', auth, async (req, res) => {
+    try {
+        const { accessToken } = req.body;
+
+        if (!accessToken) {
+            return res.status(400).json({ message: 'Access token is required' });
+        }
+
+        console.log('📸 Connecting Instagram account...');
+
+        // Validate token and get Instagram Business Account ID
+        const validation = await validateInstagramToken(accessToken);
+        if (!validation.valid) {
+            return res.status(401).json({ message: 'Invalid Instagram access token', error: validation.error });
+        }
+
+        // Get Instagram Business Account ID
+        const igBusinessId = validation.data?.id;
+        const username = validation.data?.username;
+
+        if (!igBusinessId) {
+            return res.status(400).json({ 
+                message: 'Could not retrieve Instagram Business Account ID. Make sure you have a Business account.',
+                hint: 'Convert your Instagram account to a Business account in settings.'
+            });
+        }
+
+        // Check if Instagram account is already connected to another user
+        const existingInstaUser = await User.findOne({ 
+            'profile.instagramBusinessId': igBusinessId,
+            _id: { $ne: req.user._id }
+        });
+
+        if (existingInstaUser) {
+            console.error('❌ Instagram account already connected to another user');
+            return res.status(400).json({ message: 'This Instagram account is already connected to another user' });
+        }
+
+        // Update user profile
+        const user = await User.findByIdAndUpdate(
+            req.user._id,
+            {
+                $set: {
+                    'profile.instagramAccessToken': accessToken,
+                    'profile.instagramBusinessId': igBusinessId,
+                    'profile.instagramHandle': username,
+                    updatedAt: new Date()
+                }
+            },
+            { new: true }
+        ).select('-password');
+
+        console.log('✅ Instagram account connected successfully');
+
+        res.json({
+            message: 'Instagram account connected successfully',
+            user: {
+                id: user._id,
+                instagramBusinessId: igBusinessId,
+                instagramHandle: username
+            }
+        });
+
+    } catch (error) {
+        console.error('❌ Instagram connection error:', error);
+        res.status(500).json({ message: 'Failed to connect Instagram account', error: error.message });
+    }
+});
+
+/**
+ * @swagger
+ * /api/social/instagram/disconnect:
+ *   post:
+ *     summary: Disconnect Instagram Business Account
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Instagram account disconnected
+ */
+router.post('/instagram/disconnect', auth, async (req, res) => {
+    try {
+        if (!req.user.profile?.instagramAccessToken) {
+            return res.status(400).json({ message: 'No Instagram account connected' });
+        }
+
+        // Update user profile to remove Instagram data
+        const user = await User.findByIdAndUpdate(
+            req.user._id,
+            {
+                $unset: {
+                    'profile.instagramAccessToken': 1,
+                    'profile.instagramBusinessId': 1,
+                    'profile.instagramHandle': 1
+                },
+                $set: { updatedAt: new Date() }
+            },
+            { new: true }
+        ).select('-password');
+
+        console.log('✅ Instagram account disconnected');
+
+        res.json({
+            message: 'Instagram account disconnected successfully',
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email
+            }
+        });
+
+    } catch (error) {
+        console.error('❌ Instagram disconnect error:', error);
+        res.status(500).json({ message: 'Failed to disconnect Instagram account', error: error.message });
     }
 });
 

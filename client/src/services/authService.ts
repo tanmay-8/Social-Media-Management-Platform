@@ -42,10 +42,30 @@ export const authService = {
     return !!storage.getToken();
   },
 
-  // Facebook OAuth - initiate login
+  // Facebook OAuth - initiate login or connect
   loginWithFacebook(): void {
     const serverUrl = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000';
-    window.location.href = `${serverUrl}/api/auth/facebook`;
+    const token = storage.getToken();
+    
+    // Pass token as query parameter if user is authenticated (connecting account)
+    if (token) {
+      window.location.href = `${serverUrl}/api/auth/facebook?token=${encodeURIComponent(token)}`;
+    } else {
+      window.location.href = `${serverUrl}/api/auth/facebook`;
+    }
+  },
+
+  // Instagram OAuth - initiate login or connect
+  loginWithInstagram(): void {
+    const serverUrl = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000';
+    const token = storage.getToken();
+    
+    // Pass token as query parameter if user is authenticated (connecting account)
+    if (token) {
+      window.location.href = `${serverUrl}/api/auth/instagram?token=${encodeURIComponent(token)}`;
+    } else {
+      window.location.href = `${serverUrl}/api/auth/instagram`;
+    }
   },
 
   // Handle OAuth callback
@@ -62,5 +82,10 @@ export const authService = {
   // Disconnect Facebook account
   async disconnectFacebook(): Promise<{ user: User }> {
     return api.post('/api/auth/facebook/disconnect');
+  },
+
+  // Disconnect Instagram account
+  async disconnectInstagram(): Promise<{ user: User }> {
+    return api.post('/api/auth/instagram/disconnect');
   },
 };

@@ -180,7 +180,7 @@ router.post('/festivals', auth, requireAdmin, upload.single('baseImage'), async 
  *           type: string
  *     requestBody:
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
  *             properties:
@@ -192,12 +192,14 @@ router.post('/festivals', auth, requireAdmin, upload.single('baseImage'), async 
  *                 type: string
  *               description:
  *                 type: string
+ *               baseImage:
+ *                 type: file
  *     responses:
  *       200:
  *         description: Festival updated
  */
-// Update festival
-router.put('/festivals/:id', auth, requireAdmin, async (req, res) => {
+// Update festival with optional base image
+router.put('/festivals/:id', auth, requireAdmin, upload.single('baseImage'), async (req, res) => {
     try {
         const { name, date, category, description } = req.body;
         const festival = await Festival.findById(req.params.id);
@@ -210,6 +212,26 @@ router.put('/festivals/:id', auth, requireAdmin, async (req, res) => {
         if (date) festival.date = new Date(date);
         if (category) festival.category = category;
         if (description !== undefined) festival.description = description;
+
+        // Handle image upload if provided
+        if (req.file) {
+            // Delete old image from Cloudinary if it exists
+            if (festival.baseImage?.public_id) {
+                try {
+                    await cloudinary.uploader.destroy(festival.baseImage.public_id);
+                } catch (deleteErr) {
+                    console.error('Error deleting old image:', deleteErr);
+                }
+            }
+
+            // Upload new image
+            const filePath = req.file.path;
+            const stream = fs.createReadStream(filePath);
+            const result = await uploadStream(stream, { folder: 'festivals' });
+            fs.unlinkSync(filePath);
+
+            festival.baseImage = { url: result.secure_url, public_id: result.public_id };
+        }
 
         await festival.save();
         
@@ -427,6 +449,62 @@ router.delete('/users/:id', auth, requireAdmin, async (req, res) => {
     } catch (err) {
         console.error('Delete user error:', err);
         res.status(500).json({ message: 'Failed to delete user' });
+    }
+});
+
+/**
+ * @swagger
+ * /api/admin/trigger-festival-scheduler:
+ *   post:
+ *     summary: Manually trigger festival auto-scheduling (admin)
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Scheduler triggered successfully
+ */
+router.post('/trigger-festival-scheduler', auth, requireAdmin, async (req, res) => {
+    try {
+        const { manualTrigger } = require('../utils/autoScheduleFestivals');
+        
+        console.log('🔧 Admin triggered festival auto-scheduler');
+        const result = await manualTrigger();
+        
+        res.json({
+            message: 'Festival scheduler triggered successfully',
+            result
+        });
+    } catch (error) {
+        console.error('Festival scheduler trigger error:', error);
+        res.status(500).json({ message: 'Failed to trigger scheduler', error: error.message });
+    }
+});
+
+/**
+ * @swagger
+ * /api/admin/trigger-post-scheduler:
+ *   post:
+ *     summary: Manually trigger auto-posting scheduler (admin)
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Scheduler triggered successfully
+ */
+router.post('/trigger-post-scheduler', auth, requireAdmin, async (req, res) => {
+    try {
+        const { manualTrigger } = require('../utils/autoPostScheduler');
+        
+        console.log('🔧 Admin triggered auto-posting scheduler');
+        const result = await manualTrigger();
+        
+        res.json({
+            message: 'Auto-posting scheduler triggered successfully',
+            result
+        });
+    } catch (error) {
+        console.error('Auto-posting scheduler trigger error:', error);
+        res.status(500).json({ message: 'Failed to trigger scheduler', error: error.message });
     }
 });
 

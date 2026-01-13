@@ -21,6 +21,7 @@ export interface UserProfile {
   role?: 'user' | 'admin';
   photoUrl?: string;
   facebookId?: string;
+  instagramHandle?: string;
   party?: PartyInfo;
   festivalPreference?: FestivalPreference;
 }

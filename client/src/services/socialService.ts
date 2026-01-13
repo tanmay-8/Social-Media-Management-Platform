@@ -1,8 +1,8 @@
 import { api } from './api';
 
 export interface ConnectFacebookData {
-  pageAccessToken: string;
   pageId: string;
+  pageAccessToken?: string; // No longer needed - server gets it
 }
 
 export interface ConnectInstagramData {
@@ -26,7 +26,7 @@ export const socialService = {
     return api.post('/api/social/connect/instagram', data);
   },
 
-  // Get Facebook pages
+  // Get Facebook pages from authenticated user's account
   async getPages() {
     return api.get('/api/social/pages');
   },
