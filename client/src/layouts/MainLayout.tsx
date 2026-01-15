@@ -51,6 +51,28 @@ export const MainLayout = () => {
         <Outlet />
       </main>
 
+      <footer className="border-t border-gray-200 bg-white px-6 py-4">
+        <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
+          <p className="text-sm text-gray-600">
+            © 2026 Social Automation. All rights reserved.
+          </p>
+          <div className="flex gap-6">
+            <NavLink
+              to="/terms-of-service"
+              className="text-sm text-[#669bbc] hover:text-[#003049] transition-colors"
+            >
+              Terms of Service
+            </NavLink>
+            <NavLink
+              to="/privacy-policy"
+              className="text-sm text-[#669bbc] hover:text-[#003049] transition-colors"
+            >
+              Privacy Policy
+            </NavLink>
+          </div>
+        </div>
+      </footer>
+
       {isPanelOpen && (
         <div className="fixed inset-0 z-50 flex justify-end bg-black/50 backdrop-blur-sm animate-in fade-in" onClick={closePanel}>
           <aside

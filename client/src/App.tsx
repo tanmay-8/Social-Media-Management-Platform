@@ -9,6 +9,8 @@ import { AuthCallbackPage } from './pages/AuthCallbackPage';
 import { HomePage } from './pages/HomePage';
 import { ProfilePage } from './pages/ProfilePage';
 import { SubscriptionPage } from './pages/SubscriptionPage';
+import { TermsOfServicePage } from './pages/TermsOfServicePage';
+import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminUsers from './pages/AdminUsers';
 import AdminFestivals from './pages/AdminFestivals';
@@ -27,6 +29,10 @@ const App = () => {
 
       {/* OAuth callback route - public */}
       <Route path="/auth/callback" element={<AuthCallbackPage />} />
+
+      {/* Public legal pages */}
+      <Route path="/terms-of-service" element={<TermsOfServicePage />} />
+      <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
 
       <Route
         element={

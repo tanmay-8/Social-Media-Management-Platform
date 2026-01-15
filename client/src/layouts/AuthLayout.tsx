@@ -45,7 +45,23 @@ export const AuthLayout = () => {
         </div>
         
         {/* Footer */}
-        <p className="mt-6 text-center text-xs text-[#7f7270]">© 2025 Social Automation. All rights reserved.</p>
+        <div className="mt-6 flex flex-col items-center gap-3">
+          <div className="flex gap-4">
+            <NavLink
+              to="/terms-of-service"
+              className="text-xs text-[#669bbc] hover:text-[#003049] transition-colors"
+            >
+              Terms of Service
+            </NavLink>
+            <NavLink
+              to="/privacy-policy"
+              className="text-xs text-[#669bbc] hover:text-[#003049] transition-colors"
+            >
+              Privacy Policy
+            </NavLink>
+          </div>
+          <p className="text-center text-xs text-[#7f7270]">© 2026 Social Automation. All rights reserved.</p>
+        </div>
       </div>
     </div>
   );
