@@ -15,6 +15,7 @@ export interface User {
   profile?: {
     instagramHandle?: string;
     facebookPageId?: string;
+    facebookPageName?: string;
     instagramBusinessId?: string;
     footerImage?: {
       url: string;
