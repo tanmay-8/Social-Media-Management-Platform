@@ -5,7 +5,7 @@ const { uploadStream } = require('../utils/cloudinary');
 const auth = require('../middleware/auth');
 const User = require('../models/User');
 const Festival = require('../models/Festival');
-const { composeFestivalImage } = require('../utils/composer');
+const { composeAndUpload } = require('../utils/composer');
 const { postToFacebook } = require('../utils/facebookAPI');
 
 const router = express.Router();
@@ -122,19 +122,19 @@ router.post('/post-now', auth, async (req, res) => {
         console.log(`[POST NOW] Composing image for festival: ${festival.name}`);
         
         // Compose the image
-        const composedImageUrl = await composeFestivalImage(
+        const composedResult = await composeAndUpload(
             festival.baseImage.url,
             user.profile.footerImage.url
         );
 
-        console.log(`[POST NOW] Image composed: ${composedImageUrl}`);
+        console.log(`[POST NOW] Image composed: ${composedResult.secure_url}`);
         console.log(`[POST NOW] Posting to Facebook page: ${user.profile.facebookPageId}`);
 
         // Post to Facebook
         const fbResponse = await postToFacebook(
-            user.profile.facebookPageId,
             user.profile.facebookPageAccessToken,
-            composedImageUrl,
+            user.profile.facebookPageId,
+            composedResult.secure_url,
             `Happy ${festival.name}! 🎉\n\n${festival.description || 'Wishing you joy and prosperity!'}`
         );
 
@@ -143,8 +143,8 @@ router.post('/post-now', auth, async (req, res) => {
         res.json({
             message: 'Posted successfully to Facebook',
             festivalName: festival.name,
-            postId: fbResponse.id,
-            imageUrl: composedImageUrl
+            postId: fbResponse.postId,
+            imageUrl: composedResult.secure_url
         });
 
     } catch (error) {
