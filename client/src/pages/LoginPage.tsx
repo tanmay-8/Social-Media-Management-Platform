@@ -70,7 +70,6 @@ export const LoginPage = () => {
         <input
           id="email"
           type="email"
-          placeholder="you@example.com"
           className="rounded-xl border-2 border-[rgba(0,48,73,0.15)] bg-[#fafafa] px-4 py-3 text-[0.95rem] text-[#003049] placeholder:text-[#a0a0a0] transition-all focus:border-[#669bbc] focus:outline-none focus:ring-4 focus:ring-[#669bbc]/10 focus:bg-white"
           {...register('email', { required: 'Email is required' })}
         />
@@ -90,7 +89,6 @@ export const LoginPage = () => {
         <input
           id="password"
           type="password"
-          placeholder="Enter your password"
           className="rounded-xl border-2 border-[rgba(0,48,73,0.15)] bg-[#fafafa] px-4 py-3 text-[0.95rem] text-[#003049] placeholder:text-[#a0a0a0] transition-all focus:border-[#669bbc] focus:outline-none focus:ring-4 focus:ring-[#669bbc]/10 focus:bg-white"
           {...register('password', { required: 'Password is required' })}
         />
