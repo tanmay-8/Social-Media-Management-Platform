@@ -22,8 +22,19 @@ router.get('/', auth, async (req, res) => {
         if (userCategory !== 'all') {
             query.category = userCategory;
         }
+
+        // Get all festivals matching criteria
+        const allFestivals = await Festival.find(query).sort({ date: 1 });
         
-        const festivals = await Festival.find(query).sort({ date: 1 });
+        // Filter for today and future festivals only
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const festivals = allFestivals.filter(festival => {
+            const festivalDate = new Date(festival.date);
+            festivalDate.setHours(0, 0, 0, 0);
+            return festivalDate >= today;
+        });
         
         res.json({
             festivals,

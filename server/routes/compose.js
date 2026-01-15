@@ -5,6 +5,8 @@ const { uploadStream } = require('../utils/cloudinary');
 const auth = require('../middleware/auth');
 const User = require('../models/User');
 const Festival = require('../models/Festival');
+const { composeFestivalImage } = require('../utils/composer');
+const { postToFacebook } = require('../utils/facebookAPI');
 
 const router = express.Router();
 
@@ -71,6 +73,86 @@ router.post('/test', auth, async (req, res) => {
     } catch (err) {
         console.error('Compose error:', err.message || err);
         res.status(500).json({ message: 'Compose failed', error: err.message || err });
+    }
+});
+
+/**
+ * @route   POST /api/compose/post-now
+ * @desc    Immediately compose and post a festival to Facebook
+ * @access  Private
+ */
+router.post('/post-now', auth, async (req, res) => {
+    try {
+        const { festivalId } = req.body;
+        
+        if (!festivalId) {
+            return res.status(400).json({ message: 'Festival ID is required' });
+        }
+
+        const user = await User.findById(req.user._id);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        const festival = await Festival.findById(festivalId);
+        if (!festival) {
+            return res.status(404).json({ message: 'Festival not found' });
+        }
+
+        // Check if user has Facebook connected
+        if (!user.profile?.facebookAccessToken) {
+            return res.status(400).json({ message: 'Facebook account not connected' });
+        }
+
+        // Check if user has Facebook page connected
+        if (!user.profile?.facebookPageId || !user.profile?.facebookPageAccessToken) {
+            return res.status(400).json({ message: 'Facebook page not connected' });
+        }
+
+        // Check if user has footer image
+        if (!user.profile?.footerImage?.url) {
+            return res.status(400).json({ message: 'Footer image not set' });
+        }
+
+        // Check if festival has base image
+        if (!festival.baseImage?.url) {
+            return res.status(400).json({ message: 'Festival base image not available' });
+        }
+
+        console.log(`[POST NOW] Composing image for festival: ${festival.name}`);
+        
+        // Compose the image
+        const composedImageUrl = await composeFestivalImage(
+            festival.baseImage.url,
+            user.profile.footerImage.url
+        );
+
+        console.log(`[POST NOW] Image composed: ${composedImageUrl}`);
+        console.log(`[POST NOW] Posting to Facebook page: ${user.profile.facebookPageId}`);
+
+        // Post to Facebook
+        const fbResponse = await postToFacebook(
+            user.profile.facebookPageId,
+            user.profile.facebookPageAccessToken,
+            composedImageUrl,
+            `Happy ${festival.name}! 🎉\n\n${festival.description || 'Wishing you joy and prosperity!'}`
+        );
+
+        console.log(`[POST NOW] Successfully posted to Facebook:`, fbResponse);
+
+        res.json({
+            message: 'Posted successfully to Facebook',
+            festivalName: festival.name,
+            postId: fbResponse.id,
+            imageUrl: composedImageUrl
+        });
+
+    } catch (error) {
+        console.error('[POST NOW] Error:', error);
+        res.status(500).json({ 
+            message: 'Failed to post festival',
+            error: error.message || 'Unknown error'
+        });
     }
 });
 

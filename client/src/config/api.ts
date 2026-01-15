@@ -31,6 +31,7 @@ export const API_CONFIG = {
     
     // Compose
     COMPOSE: '/api/compose',
+    COMPOSE_POST_NOW: '/api/compose/post-now',
     
     // Scheduled Posts
     SCHEDULED_POSTS: '/api/scheduled',
