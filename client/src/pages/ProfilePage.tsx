@@ -263,6 +263,7 @@ export const ProfilePage = () => {
         email: userResult.user.email,
         role: userResult.user.role,
         facebookId: userResult.user.facebookId,
+        facebookPageName: userResult.user.profile?.facebookPageName,
         photoUrl: userResult.user.profile?.footerImage?.url
       });
 
@@ -409,53 +410,6 @@ export const ProfilePage = () => {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[0.85rem] text-[#003049]">Party</label>
-              <div className="mt-2">
-                <select
-                  className="w-full rounded-xl border border-[rgba(0,48,73,0.3)] bg-[#fffaf0] px-3 py-2 text-[0.9rem] text-[#003049] focus:border-[#669bbc] focus:outline-none focus:ring-2 focus:ring-[#669bbc]/20"
-                  {...register('partyPredefined')}
-                >
-                  <option value="">Select your party</option>
-                  <option value="bjp">BJP</option>
-                  <option value="congress">Congress</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="customPartyName" className="text-[0.85rem] text-[#003049]">If not listed</label>
-              <input
-                id="customPartyName"
-                placeholder="Enter party name"
-                className="rounded-xl border border-[rgba(0,48,73,0.3)] bg-[#fffaf0] px-3 py-2 text-[0.9rem] text-[#003049] placeholder:text-[#c9bfb6] disabled:opacity-50 focus:border-[#669bbc] focus:outline-none focus:ring-2 focus:ring-[#669bbc]/20"
-                {...register('customPartyName')}
-                disabled={!!partyPredefined}
-              />
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[0.85rem] text-[#003049]">Upload party logo</label>
-              <div className="flex items-center gap-2">
-                <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl border border-dashed border-[rgba(0,48,73,0.4)]">
-                  {user?.party?.logoUrl ? (
-                    <img src={user.party.logoUrl} alt="Party logo" className="h-full w-full object-contain" />
-                  ) : (
-                    <span className="text-xs text-[#7f7270]">Logo</span>
-                  )}
-                </div>
-                <label className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-full border border-[rgba(0,48,73,0.25)] bg-[#fdf0d5] px-3 py-1.5 text-[0.85rem] text-[#003049] transition-all duration-150 hover:border-[#669bbc] hover:bg-[#fffaf0]">
-                  Upload logo
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handlePartyLogoUpload}
-                  />
-                </label>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-1.5">
               <label className="text-[0.85rem] text-[#003049]">Festival selection</label>
               <div className="flex gap-2">
                 <label className="cursor-pointer rounded-full border border-[rgba(0,48,73,0.4)] px-3 py-1 text-[0.8rem] has-[:checked]:border-[#c1121f] has-[:checked]:bg-[rgba(193,18,31,0.08)]">
@@ -535,6 +489,12 @@ export const ProfilePage = () => {
                         )}
                       </button>
                     </div>
+                    {user?.facebookPageName && (
+                      <div className="flex items-center gap-2 pl-7">
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                        <span className="text-[0.8rem] text-[#003049]">Page connected: <strong>{user.facebookPageName}</strong></span>
+                      </div>
+                    )}
                     {user?.instagramHandle ? (
                       <div className="flex items-center gap-2 pl-7">
                         <CheckCircle className="h-4 w-4 text-green-600" />
