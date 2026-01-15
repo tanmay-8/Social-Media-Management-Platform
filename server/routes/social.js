@@ -60,6 +60,12 @@ router.post('/connect/facebook', auth, async (req, res) => {
         const pageAccessToken = pageTokenResult.pageAccessToken;
         console.log('✅ Got page access token');
 
+        // Get page details to save the page name
+        console.log('🔵 Fetching page details...');
+        const pagesResult = await getUserPages(userAccessToken);
+        const connectedPage = pagesResult.pages?.find(p => p.id === pageId);
+        const pageName = connectedPage?.name || '';
+
         // Update user profile with page info
         console.log('🔵 Updating user profile...');
         const user = await User.findByIdAndUpdate(
@@ -67,6 +73,7 @@ router.post('/connect/facebook', auth, async (req, res) => {
             {
                 $set: {
                     'profile.facebookPageId': pageId,
+                    'profile.facebookPageName': pageName,
                     'profile.facebookPageAccessToken': pageAccessToken,
                     updatedAt: new Date()
                 }
@@ -74,14 +81,15 @@ router.post('/connect/facebook', auth, async (req, res) => {
             { new: true }
         ).select('-password');
 
-        console.log('✅ Successfully connected page');
+        console.log('✅ Successfully connected page:', pageName);
 
         res.json({
             message: 'Facebook page connected successfully',
             user: {
                 id: user._id,
                 name: user.name,
-                facebookPageId: pageId
+                facebookPageId: pageId,
+                facebookPageName: pageName
             }
         });
 

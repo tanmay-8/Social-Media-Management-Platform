@@ -46,6 +46,7 @@ const userSchema = new mongoose.Schema({
     profile: {
         instagramHandle: String,
         facebookPageId: String,
+        facebookPageName: String,
         instagramBusinessId: String,
         // Cloudinary image for user's footer/branding
         footerImage: {

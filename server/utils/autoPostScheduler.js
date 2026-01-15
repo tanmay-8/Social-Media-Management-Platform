@@ -4,7 +4,7 @@ const Festival = require('../models/Festival');
 const User = require('../models/User');
 const { composeAndUpload } = require('./composer');
 const { postToInstagram } = require('./instagramAPI');
-const { postToFacebook } = require('./facebookAPI');
+const { postToFacebook, getUserPages, getPageAccessToken } = require('./facebookAPI');
 
 /**
  * Auto-posting scheduler
@@ -120,13 +120,55 @@ async function processScheduledPost(scheduledPost) {
             scheduledPost.platforms.instagram = { status: 'pending' };
         }
 
-        // Step 3: Post to Facebook (if connected)
-        if (user.profile?.facebookPageAccessToken && user.profile?.facebookPageId) {
+        // Step 3: Post to Facebook (with auto-discovery if needed)
+        let facebookPageAccessToken = user.profile?.facebookPageAccessToken;
+        let facebookPageId = user.profile?.facebookPageId;
+
+        // If no page is connected but user has Facebook access token, try to discover pages
+        if (!facebookPageId && user.profile?.facebookAccessToken) {
+            console.log('🔍 No Facebook Page connected, attempting auto-discovery...');
+            try {
+                const pagesResult = await getUserPages(user.profile.facebookAccessToken);
+                
+                if (pagesResult.success && pagesResult.pages.length > 0) {
+                    const firstPage = pagesResult.pages[0];
+                    console.log(`📄 Found ${pagesResult.pages.length} page(s), using: ${firstPage.name} (${firstPage.id})`);
+                    
+                    // Get page access token
+                    const pageTokenResult = await getPageAccessToken(
+                        user.profile.facebookAccessToken,
+                        firstPage.id
+                    );
+
+                    if (pageTokenResult.success) {
+                        facebookPageId = firstPage.id;
+                        facebookPageAccessToken = pageTokenResult.pageAccessToken;
+
+                        // Save to user profile for future use
+                        user.profile.facebookPageId = firstPage.id;
+                        user.profile.facebookPageName = firstPage.name;
+                        user.profile.facebookPageAccessToken = pageTokenResult.pageAccessToken;
+                        await user.save();
+                        
+                        console.log('✅ Auto-discovered page saved to profile for future posting');
+                    } else {
+                        console.error('❌ Failed to get page access token:', pageTokenResult.error);
+                    }
+                } else {
+                    console.log('⚠️  No Facebook Pages found for this account');
+                }
+            } catch (error) {
+                console.error('❌ Page auto-discovery failed:', error.message);
+            }
+        }
+
+        // Now attempt to post if we have page credentials
+        if (facebookPageAccessToken && facebookPageId) {
             console.log('📘 Posting to Facebook...');
             try {
                 const facebookResult = await postToFacebook(
-                    user.profile.facebookPageAccessToken,
-                    user.profile.facebookPageId,
+                    facebookPageAccessToken,
+                    facebookPageId,
                     composedImage.secure_url,
                     caption
                 );
