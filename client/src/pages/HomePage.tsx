@@ -81,8 +81,10 @@ export const HomePage = () => {
       console.error('Failed to fetch data:', error);
       throw error;
     }
+  };
+
   const handlePostNow = async (festivalId: string, festivalName: string) => {
-    if (!window.confirm(`Post "${festivalName}" to Facebook now?`)) {
+    if (!window.confirm(`Post "\${festivalName}" to Facebook now?`)) {
       return;
     }
 
@@ -92,7 +94,7 @@ export const HomePage = () => {
 
     try {
       const result = await festivalService.postNow(festivalId);
-      setSuccessMessage(`✓ Posted "${result.festivalName}" successfully!`);
+      setSuccessMessage(`✓ Posted "\${result.festivalName}" successfully!`);
       setTimeout(() => setSuccessMessage(null), 5000);
     } catch (error) {
       console.error('Post now failed:', error);
@@ -103,6 +105,29 @@ export const HomePage = () => {
       setPostingId(null);
     }
   };
+
+  const upcomingFestivals = festivals.filter(festival => {
+    if (!festival?.date) return false;
+    const festivalDate = new Date(festival.date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    festivalDate.setHours(0, 0, 0, 0);
+    return festivalDate >= today;
+  }).sort((a, b) => {
+    if (!a?.date || !b?.date) return 0;
+    return new Date(a.date).getTime() - new Date(b.date).getTime();
+  });
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[calc(100vh-120px)] items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-[#669bbc] mx-auto mb-4" />
+          <p className="text-[#003049]">Loading your dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-[calc(100vh-120px)] flex-col">
@@ -135,23 +160,38 @@ export const HomePage = () => {
             )}
           </div>
         </div>
-      )}iv className="flex min-h-[calc(100vh-120px)] items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-[#669bbc] mx-auto mb-4" />
-          <p className="text-[#003049]">Loading your dashboard...</p>
+      )}
+
+      <div className="mb-8 flex items-center justify-between animate-in fade-in slide-in-from-top duration-500">
+        <div>
+          <h1 className="mb-2 text-3xl font-bold tracking-tight text-[#003049] md:text-4xl">
+            Festival Automation
+          </h1>
+          <p className="text-base leading-relaxed text-[#669bbc]">
+            Automatically post festival greetings to your Facebook page
+          </p>
         </div>
       </div>
-    );
-  }
 
-  return (
-    <div className="flex min-h-[calc(100vh-120px)] flex-col">
-      {error && (
-        <div className="mb-4 rounded-lg bg-red-50 border border-red-200 p-4 flex items-start gap-3 animate-in fade-in slide-in-from-top">
-          <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-          <div className="flex-1">
-            <p className="text-sm font-medium text-red-800">Setup Required</p>
-            <p className="text-sm text-red-700 mt-1">{error}</p>
+      <div className="grid gap-6">
+        {/* Upcoming Festivals */}
+        <section className="rounded-3xl border border-white/40 bg-white/90 p-6 shadow-elegant backdrop-blur-sm">
+          <div className="mb-6 flex items-center gap-3 border-b border-gray-100 pb-4">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#669bbc] to-[#003049] text-white shadow-md">
+              <Clock className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="m-0 text-xl font-bold text-[#003049]">Upcoming Festivals</h3>
+              <p className="m-0 text-xs text-gray-500">{upcomingFestivals.length} scheduled</p>
+            </div>
+          </div>
+          
+          <div className="space-y-3 max-h-96 overflow-y-auto">
+            {upcomingFestivals.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <Calendar className="h-12 w-12 mx-auto mb-2 text-gray-300" />
+                <p className="text-sm">No upcoming festivals</p>
+              </div>
             ) : (
               upcomingFestivals.map((festival) => {
                 const isPosting = postingId === festival?._id;
@@ -181,7 +221,7 @@ export const HomePage = () => {
                       </p>
                     </div>
                     {festival?.date && (
-                      <span className={`rounded-full px-2 py-1 text-xs font-medium ${
+                      <span className={`rounded-full px-2 py-1 text-xs font-mediu${
                         isToday ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
                       }`}>
                         {isToday ? 'Today' : `${daysUntil} days`}
@@ -208,46 +248,6 @@ export const HomePage = () => {
                   </div>
                 );
               })
-            )}<p className="m-0 text-xs text-gray-500">{upcomingFestivals.length} scheduled</p>
-            </div>
-          </div>
-          
-          <div className="space-y-3 max-h-96 overflow-y-auto">
-            {upcomingFestivals.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <Calendar className="h-12 w-12 mx-auto mb-2 text-gray-300" />
-                <p className="text-sm">No upcoming festivals</p>
-              </div>
-            ) : (
-              upcomingFestivals.map((festival) => (
-                <div
-                  key={festival?._id || Math.random()}
-                  className="flex items-center gap-3 rounded-xl border border-gray-200 bg-gradient-to-r from-white to-gray-50 p-3 transition-all hover:shadow-md"
-                >
-                  {festival?.baseImage?.url && (
-                    <img
-                      src={festival.baseImage.url}
-                      alt={festival?.name || 'Festival'}
-                      className="h-12 w-12 rounded-lg object-cover"
-                    />
-                  )}
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold text-[#003049] m-0">{festival?.name || 'Untitled Festival'}</p>
-                    <p className="text-xs text-[#669bbc] m-0">
-                      {festival?.date ? new Date(festival.date).toLocaleDateString('en-US', {
-                        month: 'long',
-                        day: 'numeric',
-                        year: 'numeric'
-                      }) : 'Date TBD'}
-                    </p>
-                  </div>
-                  {festival?.date && (
-                    <span className="rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-700">
-                      {Math.max(0, Math.ceil((new Date(festival.date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))} days
-                    </span>
-                  )}
-                </div>
-              ))
             )}
           </div>
         </section>
@@ -287,6 +287,3 @@ export const HomePage = () => {
     </div>
   );
 };
-
-
-
