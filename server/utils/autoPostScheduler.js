@@ -9,7 +9,13 @@ const { postToFacebook } = require('./facebookAPI');
 /**
  * Auto-posting scheduler
  * Checks for scheduled posts and publishes them to social media
+ * All times use Indian Standard Time (IST - Asia/Kolkata)
  */
+
+// Helper function to get current time in IST
+function getISTTime() {
+    return new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+}
 
 let schedulerRunning = false;
 
@@ -205,8 +211,8 @@ async function checkAndPostScheduled() {
     schedulerRunning = true;
 
     try {
-        const now = new Date();
-        console.log(`\n⏰ [${now.toISOString()}] Checking for scheduled posts...`);
+        const now = getISTTime();
+        console.log(`\n⏰ [${now.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} IST] Checking for scheduled posts...`);
 
         // Find all pending posts that are due (scheduledAt <= now)
         const pendingPosts = await ScheduledPost.find({
@@ -243,13 +249,15 @@ async function checkAndPostScheduled() {
  * Runs every hour at minute 0
  */
 function startScheduler() {
-    console.log('🚀 Starting auto-posting scheduler...');
-    console.log('⏰ Will check for scheduled posts every hour');
+    console.log('🚀 Starting auto-posting scheduler (IST timezone)...');
+    console.log('⏰ Will check for scheduled posts every hour (IST)');
 
-    // Run every hour at minute 0 (e.g., 1:00, 2:00, 3:00)
+    // Run every hour at minute 0 (e.g., 1:00, 2:00, 3:00) in IST
     // Cron format: minute hour day month dayOfWeek
     cron.schedule('0 * * * *', async () => {
         await checkAndPostScheduled();
+    }, {
+        timezone: 'Asia/Kolkata'
     });
 
     // Also run immediately on startup to catch any missed posts

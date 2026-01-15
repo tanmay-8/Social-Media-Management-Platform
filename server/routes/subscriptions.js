@@ -14,6 +14,11 @@ if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
     });
 }
 
+// Helper function to get current time in IST
+function getISTTime() {
+    return new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+}
+
 // Plan durations in months
 const PLAN_DURATIONS = {
     '3months': 3,
@@ -119,9 +124,9 @@ router.post('/verify-payment', auth, async (req, res) => {
 
         console.log('✅ Payment signature verified');
 
-        // Calculate subscription dates
-        const startDate = new Date();
-        const endDate = new Date();
+        // Calculate subscription dates (using IST for consistency with schedulers)
+        const startDate = getISTTime();
+        const endDate = getISTTime();
         endDate.setMonth(endDate.getMonth() + parseInt(durationMonths));
 
         // Determine plan based on duration
@@ -129,10 +134,10 @@ router.post('/verify-payment', auth, async (req, res) => {
         if (durationMonths === 3) plan = '3months';
         else if (durationMonths === 6) plan = '6months';
 
-        console.log('📅 Subscription dates:', { 
+        console.log('📅 Subscription dates (IST):', { 
             plan, 
-            startDate: startDate.toISOString(), 
-            endDate: endDate.toISOString() 
+            startDate: startDate.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }), 
+            endDate: endDate.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
         });
 
         // Update user subscription

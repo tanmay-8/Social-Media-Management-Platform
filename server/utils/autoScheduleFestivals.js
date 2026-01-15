@@ -5,19 +5,24 @@ const ScheduledPost = require('../models/ScheduledPost');
 
 /**
  * Auto-schedule festivals for users with matching preferences
- * Runs daily at 7:00 AM (server timezone)
+ * Runs daily at 7:00 AM IST (Indian Standard Time)
  * Creates scheduled posts for all festivals happening today
  * for users with active subscriptions and matching festival preferences
  */
 
+// Helper function to get current time in IST
+function getISTTime() {
+    return new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+}
+
 /**
- * Get the next 7:00 AM time for scheduling
- * Returns date object set to 7:00 AM
+ * Get the next 7:00 AM IST time for scheduling
+ * Returns date object set to 7:00 AM IST
  */
 function getScheduleTime() {
-    const now = new Date();
+    const now = getISTTime();
     const scheduleTime = new Date(now);
-    scheduleTime.setHours(7, 0, 0, 0); // 7:00 AM
+    scheduleTime.setHours(7, 0, 0, 0); // 7:00 AM IST
     
     // If we're past 7:00 AM today, schedule for tomorrow
     if (scheduleTime <= now) {
@@ -43,13 +48,13 @@ function festivalMatchesPreference(festival, userPreference) {
 }
 
 /**
- * Get start and end of today
+ * Get start and end of today (IST)
  */
 function getTodayDateRange() {
-    const startOfDay = new Date();
+    const startOfDay = getISTTime();
     startOfDay.setHours(0, 0, 0, 0);
     
-    const endOfDay = new Date();
+    const endOfDay = getISTTime();
     endOfDay.setHours(23, 59, 59, 999);
     
     return { startOfDay, endOfDay };
@@ -164,10 +169,10 @@ async function autoScheduleFestivalsForToday() {
                         continue;
                     }
                     
-                    // Create scheduled post for today at 7:00 AM local time
+                    // Create scheduled post for today at 7:00 AM IST
                     // The scheduledAt time will be used by the auto-posting scheduler
-                    const postTime = new Date();
-                    postTime.setHours(7, 0, 0, 0); // 7:00 AM
+                    const postTime = getISTTime();
+                    postTime.setHours(7, 0, 0, 0); // 7:00 AM IST
                     
                     const scheduledPost = new ScheduledPost({
                         user: user._id,
@@ -214,28 +219,31 @@ async function autoScheduleFestivalsForToday() {
 
 /**
  * Start the auto-scheduling cron job
- * Runs daily at 7:00 AM (when the posts should be made)
+ * Runs daily at 7:00 AM IST (when the posts should be made)
  * Also runs on server startup
  */
 function startFestivalScheduler() {
-    console.log('\n🚀 Starting Festival Auto-Scheduler...');
+    console.log('\n🚀 Starting Festival Auto-Scheduler (IST timezone)...');
     
-    // Calculate time until next 7:00 AM
+    // Calculate time until next 7:00 AM IST
     const scheduleTime = getScheduleTime();
-    const now = new Date();
+    const now = getISTTime();
     const msUntilSchedule = scheduleTime.getTime() - now.getTime();
     const hoursUntil = Math.floor(msUntilSchedule / (1000 * 60 * 60));
     const minutesUntil = Math.floor((msUntilSchedule % (1000 * 60 * 60)) / (1000 * 60));
     
-    console.log(`⏰ Next run: ${scheduleTime.toLocaleString()}`);
+    console.log(`⏰ Current time: ${now.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} IST`);
+    console.log(`⏰ Next run: ${scheduleTime.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} IST`);
     console.log(`   (in ${hoursUntil}h ${minutesUntil}m)`);
     
-    // Run every day at 7:00 AM
+    // Run every day at 7:00 AM IST
     // Cron format: minute hour day month dayOfWeek
     // 0 7 * * * = Every day at 7:00 AM
     cron.schedule('0 7 * * *', async () => {
-        console.log('\n⏰ Festival Auto-Scheduler triggered');
+        console.log('\n⏰ Festival Auto-Scheduler triggered (IST)');
         await autoScheduleFestivalsForToday();
+    }, {
+        timezone: 'Asia/Kolkata'
     });
     
     // Also run on startup after a small delay to catch any festivals from overnight
