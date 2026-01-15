@@ -27,13 +27,13 @@ router.get('/', auth, async (req, res) => {
         const allFestivals = await Festival.find(query).sort({ date: 1 });
         
         // Filter for today and future festivals only
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         
         const festivals = allFestivals.filter(festival => {
             const festivalDate = new Date(festival.date);
-            festivalDate.setHours(0, 0, 0, 0);
-            return festivalDate >= today;
+            const festivalDateOnly = new Date(festivalDate.getFullYear(), festivalDate.getMonth(), festivalDate.getDate());
+            return festivalDateOnly >= today;
         });
         
         res.json({
