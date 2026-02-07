@@ -57,10 +57,12 @@ router.post('/create-order', auth, async (req, res) => {
         });
 
         // Amount should already be in paise from frontend
+        const receiptId = `sub_${Date.now().toString().slice(-10)}`; // Keep it under 40 chars
+        
         const options = {
             amount: amount,
             currency: 'INR',
-            receipt: `receipt_${req.user._id}_${Date.now()}`,
+            receipt: receiptId,
             notes: {
                 userId: req.user._id.toString(),
                 durationMonths: durationMonths
