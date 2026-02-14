@@ -280,9 +280,15 @@ router.get('/facebook/callback', async (req, res) => {
                 user.facebookId = facebookId;
                 user.profile = user.profile || {};
                 user.profile.facebookAccessToken = access_token;
-                if (!user.profile.footerImage?.url && picture?.data?.url) {
-                    user.profile.footerImage = { url: picture.data.url };
+                
+                // Save Facebook profile picture as profileImage (not footerImage)
+                if (!user.profile.profileImage?.url && picture?.data?.url) {
+                    user.profile.profileImage = { 
+                        url: picture.data.url,
+                        source: 'facebook'
+                    };
                 }
+                
                 // Store Instagram data if available
                 if (instagramBusinessId) {
                     user.profile.instagramBusinessId = instagramBusinessId;
@@ -330,9 +336,10 @@ router.get('/facebook/callback', async (req, res) => {
                     instagramBusinessId: instagramBusinessId,
                     instagramHandle: instagramHandle,
                     instagramAccessToken: instagramBusinessId ? access_token : undefined,
-                    footerImage: {
-                        url: picture?.data?.url
-                    }
+                    profileImage: picture?.data?.url ? {
+                        url: picture.data.url,
+                        source: 'facebook'
+                    } : undefined
                 }
             });
             await user.save();

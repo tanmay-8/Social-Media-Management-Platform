@@ -54,10 +54,128 @@ router.get('/stats', auth, requireAdmin, async (req, res) => {
  *       200:
  *         description: List of users
  */
-// Get all users
+// Get all users with their images
 router.get('/users', auth, requireAdmin, async (req, res) => {
-    const users = await User.find().select('-password');
-    res.json({ users });
+    try {
+        const users = await User.find().select('-password -facebookAccessToken -facebookPageAccessToken -instagramAccessToken');
+        
+        // Format response with image info
+        const usersWithImages = users.map(user => ({
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            phone: user.phone,
+            role: user.role,
+            authProvider: user.authProvider,
+            subscription: user.subscription,
+            profile: {
+                instagramHandle: user.profile?.instagramHandle,
+                facebookPageId: user.profile?.facebookPageId,
+                festivalCategory: user.profile?.festivalCategory,
+                profileImage: user.profile?.profileImage ? {
+                    url: user.profile.profileImage.url,
+                    source: user.profile.profileImage.source,
+                    hasImage: true
+                } : {
+                    url: null,
+                    source: 'default',
+                    hasImage: false
+                },
+                footerImage: user.profile?.footerImage ? {
+                    url: user.profile.footerImage.url,
+                    hasImage: true
+                } : {
+                    url: null,
+                    hasImage: false
+                }
+            },
+            createdAt: user.createdAt
+        }));
+        
+        res.json({ users: usersWithImages });
+    } catch (err) {
+        console.error('Get users error:', err);
+        res.status(500).json({ message: 'Failed to fetch users' });
+    }
+});
+
+/**
+ * @swagger
+ * /api/admin/users/{id}:
+ *   get:
+ *     summary: Get single user details (admin)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: User details
+ */
+// Get single user with full details
+router.get('/users/:id', auth, requireAdmin, async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id).select('-password -facebookAccessToken -facebookPageAccessToken -instagramAccessToken');
+        if (!user) return res.status(404).json({ message: 'User not found' });
+        
+        res.json({ user });
+    } catch (err) {
+        console.error('Get user error:', err);
+        res.status(500).json({ message: 'Failed to fetch user' });
+    }
+});
+
+/**
+ * @swagger
+ * /api/admin/users/{id}/profile-images:
+ *   get:
+ *     summary: Get user's profile and footer images for download (admin)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: User images
+ */
+// Get user's images (for admin to download)
+router.get('/users/:id/profile-images', auth, requireAdmin, async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        const images = {
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email
+            },
+            profileImage: user.profile?.profileImage?.url ? {
+                url: user.profile.profileImage.url,
+                public_id: user.profile.profileImage.public_id,
+                source: user.profile.profileImage.source,
+                downloadUrl: user.profile.profileImage.url + '?dl=1' // Force download
+            } : null,
+            footerImage: user.profile?.footerImage?.url ? {
+                url: user.profile.footerImage.url,
+                public_id: user.profile.footerImage.public_id,
+                downloadUrl: user.profile.footerImage.url + '?dl=1'
+            } : null
+        };
+
+        res.json({ images });
+    } catch (err) {
+        console.error('Get user images error:', err);
+        res.status(500).json({ message: 'Failed to fetch images' });
+    }
 });
 
 /**

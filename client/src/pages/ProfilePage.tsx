@@ -36,6 +36,8 @@ export const ProfilePage = () => {
   const [pages, setPages] = useState<any[]>([]);
   const [loadingPages, setLoadingPages] = useState(false);
   const [selectedPage, setSelectedPage] = useState<string>('');
+  const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null);
+  const [uploadingProfileImage, setUploadingProfileImage] = useState(false);
 
   const fetchFacebookPages = async () => {
     setLoadingPages(true);
@@ -199,12 +201,56 @@ export const ProfilePage = () => {
       // Update local store with new image URL
       updateProfile({ photoUrl: result.url });
       
-      setSaveSuccess('Photo uploaded successfully!');
+      setSaveSuccess('Footer image uploaded successfully!');
       setTimeout(() => setSaveSuccess(null), 3000);
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to upload photo';
+      const message = error instanceof Error ? error.message : 'Failed to upload footer image';
       setSaveError(message);
       setTimeout(() => setSaveError(null), 5000);
+    }
+  };
+
+  const handleProfileImageUpload: React.ChangeEventHandler<HTMLInputElement> = async (
+    event
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setSaveError(null);
+    setSaveSuccess(null);
+    setUploadingProfileImage(true);
+
+    // Show preview immediately
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setProfileImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+
+    try {
+      // Upload to backend
+      const result = await userService.uploadProfileImage(file);
+      
+      setSaveSuccess('Profile image uploaded successfully!');
+      setTimeout(() => setSaveSuccess(null), 3000);
+      
+      // Refresh user data to get updated profile image
+      const userResult = await authService.getCurrentUser();
+      login({
+        id: userResult.user.id,
+        name: userResult.user.name,
+        email: userResult.user.email,
+        role: userResult.user.role,
+        facebookId: userResult.user.facebookId,
+        photoUrl: userResult.user.profile?.profileImage?.url
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to upload profile image';
+      setSaveError(message);
+      setTimeout(() => setSaveError(null), 5000);
+      setProfileImagePreview(null);
+    } finally {
+      setUploadingProfileImage(false);
     }
   };
 
@@ -383,18 +429,63 @@ export const ProfilePage = () => {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[0.85rem] text-[#003049]">Profile photo</label>
-              <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-[radial-gradient(circle_at_30%_0,#c1121f,#780000_60%,#003049)] text-[0.9rem] text-[#fdf0d5]">
-                  {user?.photoUrl ? (
-                    <img src={user.photoUrl} alt={user.name} className="h-full w-full object-cover" />
-                  ) : (
-                    <span>{user?.name?.charAt(0).toUpperCase() ?? 'U'}</span>
-                  )}
-                </div>
+              <label className="text-[0.85rem] font-medium text-[#003049]">Profile Image</label>
+              <p className="text-xs text-[#7f7270] mb-2">
+                Upload your photo. Admin will use this to create your branded footer.
+              </p>
+              <div className="flex items-start gap-4">
                 <div className="flex flex-col gap-2">
-                  <label className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-full border border-[rgba(0,48,73,0.25)] bg-[#fdf0d5] px-3 py-1.5 text-[0.85rem] text-[#003049] transition-all duration-150 hover:border-[#669bbc] hover:bg-[#fffaf0]">
-                    Upload PNG
+                  {profileImagePreview || user?.photoUrl ? (
+                    <img 
+                      src={profileImagePreview || user?.photoUrl} 
+                      alt="Profile" 
+                      className="h-24 w-24 rounded-lg object-cover border-2 border-[rgba(0,48,73,0.15)]" 
+                    />
+                  ) : (
+                    <div className="flex h-24 w-24 items-center justify-center rounded-lg bg-[radial-gradient(circle_at_30%_0,#c1121f,#780000_60%,#003049)] text-3xl text-[#fdf0d5]">
+                      {user?.name?.charAt(0).toUpperCase() ?? 'U'}
+                    </div>
+                  )}
+                  <label className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[rgba(0,48,73,0.25)] bg-[#fdf0d5] px-3 py-2 text-[0.85rem] text-[#003049] transition-all duration-150 hover:border-[#669bbc] hover:bg-[#fffaf0] disabled:opacity-50 disabled:cursor-not-allowed">
+                    {uploadingProfileImage ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Uploading...
+                      </>
+                    ) : (
+                      'Upload Image'
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleProfileImageUpload}
+                      disabled={uploadingProfileImage}
+                    />
+                  </label>
+                </div>
+                <div className="flex-1 rounded-lg bg-blue-50 border border-blue-200 p-3">
+                  <p className="text-xs text-blue-800 font-medium mb-1">📸 How it works:</p>
+                  <ul className="text-xs text-blue-700 space-y-1 ml-4">
+                    <li>Upload your photo here</li>
+                    <li>Admin downloads it from dashboard</li>
+                    <li>Admin creates branded footer with your photo</li>
+                    <li>Admin uploads footer below</li>
+                    <li>System uses footer for festival posts</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1.5 mt-2">
+              <label className="text-[0.85rem] font-medium text-[#003049]">Footer Image (Admin Only)</label>
+              <p className="text-xs text-[#7f7270] mb-2">
+                This is the branded footer created by admin. Used in festival posts.
+              </p>
+              <div className="flex items-center gap-2">
+                <div className="flex flex-col gap-2">
+                  <label className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[rgba(0,48,73,0.25)] bg-[#fdf0d5] px-3 py-2 text-[0.85rem] text-[#003049] transition-all duration-150 hover:border-[#669bbc] hover:bg-[#fffaf0]">
+                    Upload Footer PNG
                     <input
                       type="file"
                       accept="image/png"
@@ -403,7 +494,7 @@ export const ProfilePage = () => {
                     />
                   </label>
                   <span className="text-xs text-[#7f7270]">
-                    PNG format, white background recommended.
+                    PNG format, transparent background recommended.
                   </span>
                 </div>
               </div>

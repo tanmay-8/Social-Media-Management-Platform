@@ -74,6 +74,51 @@ router.put('/profile', auth, [
 
 /**
  * @swagger
+ * /api/users/profile-image:
+ *   post:
+ *     summary: Upload user's profile image
+ *     consumes:
+ *       - multipart/form-data
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: formData
+ *         name: profileImage
+ *         type: file
+ *     responses:
+ *       200:
+ *         description: Profile image uploaded
+ */
+router.post('/profile-image', auth, upload.single('profileImage'), async (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
+
+        const filePath = req.file.path;
+        const stream = fs.createReadStream(filePath);
+        const result = await uploadStream(stream, { folder: 'profile-images' });
+        fs.unlinkSync(filePath);
+
+        const user = await User.findById(req.user._id);
+        user.profile = user.profile || {};
+        user.profile.profileImage = { 
+            url: result.secure_url, 
+            public_id: result.public_id,
+            source: 'upload'
+        };
+        await user.save();
+
+        res.json({ 
+            message: 'Profile image uploaded', 
+            profileImage: user.profile.profileImage 
+        });
+    } catch (err) {
+        console.error('Profile image upload error:', err);
+        res.status(500).json({ message: 'Upload failed' });
+    }
+});
+
+/**
+ * @swagger
  * /api/users/footer:
  *   post:
  *     summary: Upload user's footer image

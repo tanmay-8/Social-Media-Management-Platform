@@ -48,7 +48,17 @@ const userSchema = new mongoose.Schema({
         facebookPageId: String,
         facebookPageName: String,
         instagramBusinessId: String,
-        // Cloudinary image for user's footer/branding
+        // User's profile image (uploaded during profile creation or from Facebook)
+        profileImage: {
+            url: String,
+            public_id: String,
+            source: {
+                type: String,
+                enum: ['upload', 'facebook', 'default'],
+                default: 'default'
+            }
+        },
+        // Cloudinary image for user's footer/branding (created by admin)
         footerImage: {
             url: String,
             public_id: String

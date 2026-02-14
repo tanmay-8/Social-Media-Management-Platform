@@ -26,4 +26,12 @@ export const userService = {
     
     return api.postFormData('/api/users/footer', formData);
   },
+
+  // Upload profile image
+  async uploadProfileImage(file: File) {
+    const formData = new FormData();
+    formData.append('profileImage', file);
+    
+    return api.postFormData('/api/users/profile-image', formData);
+  },
 };

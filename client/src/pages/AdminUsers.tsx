@@ -8,7 +8,10 @@ import {
   User as UserIcon,
   X,
   Save,
-  AlertCircle
+  AlertCircle,
+  Download,
+  Image as ImageIcon,
+  ExternalLink
 } from 'lucide-react';
 import { adminService } from '../services/adminService';
 import type { User } from '../types';
@@ -19,6 +22,7 @@ export default function AdminUsers() {
   const [searchQuery, setSearchQuery] = useState('');
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [viewingImages, setViewingImages] = useState<User | null>(null);
 
   useEffect(() => {
     fetchUsers();
@@ -124,6 +128,9 @@ export default function AdminUsers() {
                   Contact
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                  Images
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
                   Role
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
@@ -150,6 +157,15 @@ export default function AdminUsers() {
                   </td>
                   <td className="px-6 py-4">
                     <div className="text-sm text-slate-600">{user.phone || 'N/A'}</div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <button
+                      onClick={() => setViewingImages(user)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                    >
+                      <ImageIcon className="w-3.5 h-3.5" />
+                      View Images
+                    </button>
                   </td>
                   <td className="px-6 py-4">
                     <button
@@ -300,6 +316,146 @@ export default function AdminUsers() {
                 className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg font-medium hover:bg-slate-50"
               >
                 Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Image Viewer Modal */}
+      {viewingImages && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-3xl w-full p-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-slate-900">User Images - {viewingImages.name}</h2>
+              <button
+                onClick={() => setViewingImages(null)}
+                className="p-1 text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Profile Image */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-slate-900 flex items-center gap-2">
+                    <ImageIcon className="w-4 h-4 text-blue-600" />
+                    Profile Image
+                  </h3>
+                  {viewingImages.profile?.profileImage?.url && (
+                    <a
+                      href={`${viewingImages.profile.profileImage.url}?dl=1`}
+                      download
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded transition-colors"
+                    >
+                      <Download className="w-3 h-3" />
+                      Download
+                    </a>
+                  )}
+                </div>
+                {viewingImages.profile?.profileImage?.url ? (
+                  <div className="relative group">
+                    <img
+                      src={viewingImages.profile.profileImage.url}
+                      alt="Profile"
+                      className="w-full rounded-lg border-2 border-slate-200 object-cover aspect-square"
+                    />
+                    <div className="absolute top-2 left-2 px-2 py-1 bg-black/70 text-white text-xs rounded">
+                      {viewingImages.profile.profileImage.source === 'upload' && '📤 Uploaded'}
+                      {viewingImages.profile.profileImage.source === 'facebook' && '👤 Facebook'}
+                      {viewingImages.profile.profileImage.source === 'default' && '🖼️ Default'}
+                    </div>
+                    <a
+                      href={viewingImages.profile.profileImage.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="absolute top-2 right-2 p-2 bg-black/70 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                    </a>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-64 bg-slate-100 rounded-lg border-2 border-dashed border-slate-300">
+                    <ImageIcon className="w-12 h-12 text-slate-400 mb-2" />
+                    <p className="text-sm text-slate-500">No profile image uploaded</p>
+                  </div>
+                )}
+                <p className="text-xs text-slate-600">
+                  <strong>Purpose:</strong> User's photo for creating branded footer
+                </p>
+              </div>
+
+              {/* Footer Image */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-slate-900 flex items-center gap-2">
+                    <ImageIcon className="w-4 h-4 text-purple-600" />
+                    Footer Image
+                  </h3>
+                  {viewingImages.profile?.footerImage?.url && (
+                    <a
+                      href={`${viewingImages.profile.footerImage.url}?dl=1`}
+                      download
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-white bg-purple-600 hover:bg-purple-700 rounded transition-colors"
+                    >
+                      <Download className="w-3 h-3" />
+                      Download
+                    </a>
+                  )}
+                </div>
+                {viewingImages.profile?.footerImage?.url ? (
+                  <div className="relative group">
+                    <img
+                      src={viewingImages.profile.footerImage.url}
+                      alt="Footer"
+                      className="w-full rounded-lg border-2 border-slate-200 object-contain bg-slate-50"
+                      style={{ maxHeight: '256px' }}
+                    />
+                    <a
+                      href={viewingImages.profile.footerImage.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="absolute top-2 right-2 p-2 bg-black/70 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                    </a>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-64 bg-slate-100 rounded-lg border-2 border-dashed border-slate-300">
+                    <ImageIcon className="w-12 h-12 text-slate-400 mb-2" />
+                    <p className="text-sm text-slate-500">No footer image uploaded</p>
+                  </div>
+                )}
+                <p className="text-xs text-slate-600">
+                  <strong>Purpose:</strong> Branded footer for festival posts
+                </p>
+              </div>
+            </div>
+
+            {/* Workflow Info */}
+            <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <h4 className="font-semibold text-blue-900 text-sm mb-2">🔄 Image Workflow:</h4>
+              <ol className="text-xs text-blue-800 space-y-1 ml-4 list-decimal">
+                <li>User uploads profile image</li>
+                <li>Admin downloads profile image from here</li>
+                <li>Admin creates branded footer offline using profile image</li>
+                <li>Admin uploads footer image to user's profile</li>
+                <li>System uses footer in festival post compositions</li>
+              </ol>
+            </div>
+
+            <div className="mt-4">
+              <button
+                onClick={() => setViewingImages(null)}
+                className="w-full px-4 py-2 bg-slate-200 text-slate-700 rounded-lg font-medium hover:bg-slate-300 transition-colors"
+              >
+                Close
               </button>
             </div>
           </div>
