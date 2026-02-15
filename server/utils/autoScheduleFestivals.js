@@ -48,16 +48,15 @@ function festivalMatchesPreference(festival, userPreference) {
 }
 
 /**
- * Get start and end of today (IST)
+ * Get today's date components (year, month, day)
  */
-function getTodayDateRange() {
-    const startOfDay = getISTTime();
-    startOfDay.setHours(0, 0, 0, 0);
-    
-    const endOfDay = getISTTime();
-    endOfDay.setHours(23, 59, 59, 999);
-    
-    return { startOfDay, endOfDay };
+function getTodayDate() {
+    const now = new Date();
+    return {
+        year: now.getFullYear(),
+        month: now.getMonth() + 1, // JavaScript months are 0-indexed
+        day: now.getDate()
+    };
 }
 
 /**
@@ -72,16 +71,21 @@ async function autoScheduleFestivalsForToday() {
         const now = new Date();
         console.log(`⏰ Time: ${now.toISOString()}`);
         
-        // Get today's date range
-        const { startOfDay, endOfDay } = getTodayDateRange();
-        console.log(`📅 Looking for festivals between ${startOfDay.toDateString()} and ${endOfDay.toDateString()}`);
+        // Get today's date components
+        const today = getTodayDate();
+        console.log(`📅 Looking for festivals on ${today.year}-${today.month}-${today.day}`);
         
-        // Find all festivals for today
-        const todaysFestivals = await Festival.find({
-            date: {
-                $gte: startOfDay,
-                $lte: endOfDay
-            }
+        // Find all festivals for this year
+        const festivals = await Festival.find({
+            year: today.year
+        });
+        
+        // Filter festivals that match today's date (direct date comparison)
+        const todaysFestivals = festivals.filter(festival => {
+            const festivalDate = new Date(festival.date);
+            return festivalDate.getFullYear() === today.year &&
+                   festivalDate.getMonth() + 1 === today.month &&
+                   festivalDate.getDate() === today.day;
         });
         
         console.log(`\n✨ Found ${todaysFestivals.length} festival(s) today:`);
@@ -153,16 +157,21 @@ async function autoScheduleFestivalsForToday() {
             for (const festival of matchingFestivals) {
                 try {
                     // Check if this user already has a scheduled post for this festival today
-                    const existingPost = await ScheduledPost.findOne({
+                    // Get all scheduled posts for this user and festival
+                    const existingPosts = await ScheduledPost.find({
                         user: user._id,
-                        festival: festival._id,
-                        scheduledAt: {
-                            $gte: startOfDay,
-                            $lte: endOfDay
-                        }
+                        festival: festival._id
                     });
                     
-                    if (existingPost) {
+                    // Check if any of them are scheduled for today
+                    const alreadyScheduledToday = existingPosts.some(post => {
+                        const postDate = new Date(post.scheduledAt);
+                        return postDate.getFullYear() === today.year &&
+                               postDate.getMonth() + 1 === today.month &&
+                               postDate.getDate() === today.day;
+                    });
+                    
+                    if (alreadyScheduledToday) {
                         console.log(`      ⏭️  ${festival.name} - Already scheduled`);
                         userStats.skipped.push(`${festival.name} - Already scheduled`);
                         stats.skipped++;
@@ -268,6 +277,6 @@ module.exports = {
     manualTrigger,
     autoScheduleFestivalsForToday,
     festivalMatchesPreference,
-    getTodayDateRange,
+    getTodayDate,
     getScheduleTime
 };
