@@ -70,6 +70,30 @@ export default function AdminFestivals() {
       await festivalService.createFestival({
         name: editingFestival.name,
         date: editingFestival.date,
+        category: editingFestival.category,
+        description: editingFestival.description,
+        baseImage: imageFile,
+      });
+
+      setSuccess('Festival created successfully!');
+      await fetchFestivals();
+      setCreatingNew(false);
+      setEditingFestival(null);
+      setImageFile(null);
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (error: any) {
+      console.error('Failed to create festival:', error);
+      setError(error?.message || 'Failed to create festival. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleUpdateFestival = async () => {
+    if (!editingFestival || creatingNew) return;
+
     // Validation
     if (!editingFestival.name.trim()) {
       setError('Festival name is required');
@@ -103,31 +127,7 @@ export default function AdminFestivals() {
       console.error('Failed to update festival:', error);
       setError(error?.message || 'Failed to update festival. Please try again.');
     } finally {
-      setSaving(false
-      console.error('Failed to create festival:', error);
-      setError(error?.message || 'Failed to create festival. Please try again.');
-    } finally {
       setSaving(false);
-    }
-  };
-
-  const handleUpdateFestival = async () => {
-    if (!editingFestival || creatingNew) return;
-
-    try {
-      await festivalService.updateFestival(editingFestival._id, {
-        name: editingFestival.name,
-        date: editingFestival.date,
-        category: editingFestival.category,
-        description: editingFestival.description,
-        baseImage: imageFile || undefined,
-      });
-
-      await fetchFestivals();
-      setEditingFestival(null);
-      setImageFile(null);
-    } catch (error) {
-      console.error('Failed to update festival:', error);
     }
   };
 
@@ -137,7 +137,32 @@ export default function AdminFestivals() {
 
     // Validate file type
     if (!file.name.endsWith('.json')) {
-      alert('Please upload a JSON file');
+      setError('Please upload a JSON file');
+      return;
+    }
+
+    setImporting(true);
+    setError(null);
+
+    try {
+      const result = await festivalService.importFestivals(file);
+      setSuccess(`Successfully imported ${result.count} festivals`);
+      await fetchFestivals();
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (error: any) {
+      console.error('Failed to import festivals:', error);
+      setError(error?.message || 'Failed to import JSON. Please check the format.');
+    } finally {
+      setImporting(false);
+      if (csvInputRef.current) {
+        csvInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleDeleteFestival = async (festivalId: string) => {
     setSaving(true);
     setError(null);
 
@@ -149,39 +174,19 @@ export default function AdminFestivals() {
       
       // Clear success message after 3 seconds
       setTimeout(() => setSuccess(null), 3000);
-    } carror(null);
-    setImageFile(null);
-    setEtch (error: any) {
+    } catch (error: any) {
       console.error('Failed to delete festival:', error);
       setError(error?.message || 'Failed to delete festival. Please try again.');
       setDeleteConfirm(null);
     } finally {
-      setSaving(falseals(file);
-      alert(`Successfully imported ${result.count} festivals`);
-      await fetchFestivals();
-    } catch (error) {
-      console.error('Failed to import festivals:', error);
-      alert('Failed to import JSON. Please check the format.');
-    } finally {
-      setImporting(false);
-      if (csvInputRef.current) {
-        csvInputRef.current.value = '';
-      }
-    }
-  };
-
-  const handleDeleteFestival = async (festivalId: string) => {
-    try {
-      await festivalService.deleteFestival(festivalId);
-      await fetchFestivals();
-      setDeleteConfirm(null);
-    } catch (error) {
-      console.error('Failed to delete festival:', error);
+      setSaving(false);
     }
   };
 
   const openCreateModal = () => {
     setCreatingNew(true);
+    setError(null);
+    setImageFile(null);
     setEditingFestival({
       _id: '',
       name: '',
@@ -452,6 +457,14 @@ export default function AdminFestivals() {
                     <Upload className="w-8 h-8 text-slate-400" />
                     <span className="text-sm text-slate-600">
                       {imageFile ? imageFile.name : creatingNew ? 'Click to upload image' : 'Click to change image'}
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={creatingNew ? handleCreateFestival : handleUpdateFestival}
                   disabled={saving}
                   className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-lg font-medium hover:shadow-lg transition-shadow disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -475,22 +488,34 @@ export default function AdminFestivals() {
                     setError(null);
                   }}
                   disabled={saving}
-                  className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg font-medium hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed
-                </button>
-                <button
-                  onClick={() => {
-                    setEditingFestival(null);
-                    setCreatingNew(false);
-                    setImageFile(null);
-                  }}
-                  className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg font-medium hover:bg-slate-50"
+                  className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg font-medium hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Cancel
                 </button>
               </div>
             </div>
           </div>
-        </div>disabled={saving}
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+            <div className="flex items-start gap-4 mb-4">
+              <div className="p-3 bg-red-100 rounded-full">
+                <AlertCircle className="w-6 h-6 text-red-600" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-slate-900">Delete Festival</h2>
+                <p className="text-slate-600 mt-1">Are you sure you want to delete this festival? This action cannot be undone.</p>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => handleDeleteFestival(deleteConfirm)}
+                disabled={saving}
                 className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {saving ? (
@@ -505,27 +530,7 @@ export default function AdminFestivals() {
               <button
                 onClick={() => setDeleteConfirm(null)}
                 disabled={saving}
-                className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg font-medium hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed
-            <div className="flex items-start gap-4 mb-4">
-              <div className="p-3 bg-red-100 rounded-full">
-                <AlertCircle className="w-6 h-6 text-red-600" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-slate-900">Delete Festival</h2>
-                <p className="text-slate-600 mt-1">Are you sure you want to delete this festival? This action cannot be undone.</p>
-              </div>
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => handleDeleteFestival(deleteConfirm)}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors"
-              >
-                Delete
-              </button>
-              <button
-                onClick={() => setDeleteConfirm(null)}
-                className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg font-medium hover:bg-slate-50"
+                className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg font-medium hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Cancel
               </button>
