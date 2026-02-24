@@ -39,6 +39,21 @@
   .shadow-elegant-hover {
     box-shadow: 0 24px 70px -12px rgba(0, 48, 73, 0.35), 0 12px 20px -8px rgba(0, 48, 73, 0.2);
   }
+
+  .animate-slide-in {
+    animation: slide-in 0.3s ease-out;
+  }
+
+  @keyframes slide-in {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
 }
 
 

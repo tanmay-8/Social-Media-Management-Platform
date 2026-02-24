@@ -262,14 +262,22 @@ router.post('/festivals', auth, requireAdmin, upload.single('baseImage'), async 
         const { name, date, category, description } = req.body;
         if (!name || !date) return res.status(400).json({ message: 'Name/date required' });
 
+        if (!req.file) {
+            return res.status(400).json({ message: 'Base image is required' });
+        }
+
         const filePath = req.file.path;
         const stream = fs.createReadStream(filePath);
         const result = await uploadStream(stream, { folder: 'festivals' });
         fs.unlinkSync(filePath);
 
+        const festivalDate = new Date(date);
+        const year = festivalDate.getFullYear();
+
         const festival = new Festival({
             name,
-            date: new Date(date),
+            date: festivalDate,
+            year,
             category: category || 'all',
             description: description || '',
             baseImage: { url: result.secure_url, public_id: result.public_id }
@@ -327,7 +335,10 @@ router.put('/festivals/:id', auth, requireAdmin, upload.single('baseImage'), asy
         }
 
         if (name) festival.name = name;
-        if (date) festival.date = new Date(date);
+        if (date) {
+            festival.date = new Date(date);
+            festival.year = festival.date.getFullYear();
+        }
         if (category) festival.category = category;
         if (description !== undefined) festival.description = description;
 

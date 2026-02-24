@@ -24,6 +24,9 @@ export default function AdminFestivals() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const csvInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -32,10 +35,12 @@ export default function AdminFestivals() {
 
   const fetchFestivals = async () => {
     try {
+      setError(null);
       const data = await festivalService.getAllFestivals();
       setFestivals(data.festivals || []);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to fetch festivals:', error);
+      setError('Failed to load festivals. Please refresh the page.');
     } finally {
       setLoading(false);
     }
@@ -44,8 +49,42 @@ export default function AdminFestivals() {
   const handleCreateFestival = async () => {
     if (!creatingNew || !editingFestival) return;
 
+    // Validation
+    if (!editingFestival.name.trim()) {
+      setError('Festival name is required');
+      return;
+    }
+    if (!editingFestival.date) {
+      setError('Festival date is required');
+      return;
+    }
+    if (!imageFile) {
+      setError('Base image is required for new festivals');
+      return;
+    }
+
+    setSaving(true);
+    setError(null);
+
     try {
       await festivalService.createFestival({
+        name: editingFestival.name,
+        date: editingFestival.date,
+    // Validation
+    if (!editingFestival.name.trim()) {
+      setError('Festival name is required');
+      return;
+    }
+    if (!editingFestival.date) {
+      setError('Festival date is required');
+      return;
+    }
+
+    setSaving(true);
+    setError(null);
+
+    try {
+      await festivalService.updateFestival(editingFestival._id, {
         name: editingFestival.name,
         date: editingFestival.date,
         category: editingFestival.category,
@@ -53,12 +92,22 @@ export default function AdminFestivals() {
         baseImage: imageFile || undefined,
       });
 
+      setSuccess('Festival updated successfully!');
       await fetchFestivals();
-      setCreatingNew(false);
       setEditingFestival(null);
       setImageFile(null);
-    } catch (error) {
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (error: any) {
+      console.error('Failed to update festival:', error);
+      setError(error?.message || 'Failed to update festival. Please try again.');
+    } finally {
+      setSaving(false
       console.error('Failed to create festival:', error);
+      setError(error?.message || 'Failed to create festival. Please try again.');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -89,12 +138,25 @@ export default function AdminFestivals() {
     // Validate file type
     if (!file.name.endsWith('.json')) {
       alert('Please upload a JSON file');
-      return;
-    }
+    setSaving(true);
+    setError(null);
 
-    setImporting(true);
     try {
-      const result = await festivalService.importFestivals(file);
+      await festivalService.deleteFestival(festivalId);
+      setSuccess('Festival deleted successfully!');
+      await fetchFestivals();
+      setDeleteConfirm(null);
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccess(null), 3000);
+    } carror(null);
+    setImageFile(null);
+    setEtch (error: any) {
+      console.error('Failed to delete festival:', error);
+      setError(error?.message || 'Failed to delete festival. Please try again.');
+      setDeleteConfirm(null);
+    } finally {
+      setSaving(falseals(file);
       alert(`Successfully imported ${result.count} festivals`);
       await fetchFestivals();
     } catch (error) {
@@ -143,6 +205,26 @@ export default function AdminFestivals() {
 
   return (
     <div className="space-y-6">
+      {/* Success/Error Toast Notifications */}
+      {success && (
+        <div className="fixed top-4 right-4 z-50 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-3 animate-slide-in">
+          <div className="w-2 h-2 bg-white rounded-full"></div>
+          <span className="font-medium">{success}</span>
+        </div>
+      )}
+      
+      {error && (
+        <div className="fixed top-4 right-4 z-50 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-3 animate-slide-in">
+          <AlertCircle className="w-5 h-5" />
+          <div className="flex-1">
+            <span className="font-medium">{error}</span>
+          </div>
+          <button onClick={() => setError(null)} className="text-white/80 hover:text-white">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -241,7 +323,11 @@ export default function AdminFestivals() {
               
               <div className="flex gap-2">
                 <button
-                  onClick={() => setEditingFestival(festival)}
+                  onClick={() => {
+                    setEditingFestival(festival);
+                    setError(null);
+                    setImageFile(null);
+                  }}
                   className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
                 >
                   <Edit className="w-4 h-4" />
@@ -287,6 +373,14 @@ export default function AdminFestivals() {
             </div>
 
             <div className="space-y-4">
+              {/* Error Display in Modal */}
+              {error && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
+                  <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-red-800">{error}</p>
+                </div>
+              )}
+
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Festival Name</label>
                 <input
@@ -358,18 +452,30 @@ export default function AdminFestivals() {
                     <Upload className="w-8 h-8 text-slate-400" />
                     <span className="text-sm text-slate-600">
                       {imageFile ? imageFile.name : creatingNew ? 'Click to upload image' : 'Click to change image'}
-                    </span>
-                  </label>
-                </div>
-              </div>
-
-              <div className="flex gap-3 pt-4">
-                <button
-                  onClick={creatingNew ? handleCreateFestival : handleUpdateFestival}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-lg font-medium hover:shadow-lg transition-shadow"
+                  disabled={saving}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-lg font-medium hover:shadow-lg transition-shadow disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Save className="w-4 h-4" />
-                  {creatingNew ? 'Create' : 'Save Changes'}
+                  {saving ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>{creatingNew ? 'Creating...' : 'Saving...'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      {creatingNew ? 'Create' : 'Save Changes'}
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={() => {
+                    setEditingFestival(null);
+                    setCreatingNew(false);
+                    setImageFile(null);
+                    setError(null);
+                  }}
+                  disabled={saving}
+                  className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg font-medium hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed
                 </button>
                 <button
                   onClick={() => {
@@ -384,13 +490,22 @@ export default function AdminFestivals() {
               </div>
             </div>
           </div>
-        </div>
-      )}
-
-      {/* Delete Confirmation Modal */}
-      {deleteConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+        </div>disabled={saving}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {saving ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  'Delete'
+                )}
+              </button>
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                disabled={saving}
+                className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg font-medium hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed
             <div className="flex items-start gap-4 mb-4">
               <div className="p-3 bg-red-100 rounded-full">
                 <AlertCircle className="w-6 h-6 text-red-600" />
