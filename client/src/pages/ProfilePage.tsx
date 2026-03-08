@@ -43,14 +43,30 @@ export const ProfilePage = () => {
     setLoadingPages(true);
     setFacebookError(null);
     try {
+      console.log('📱 [Client] Fetching Facebook pages...');
       const result = await socialService.getPages();
+      console.log('📱 [Client] Received response:', result);
+      console.log('📱 [Client] Pages data:', JSON.stringify(result.pages, null, 2));
+      
       setPages(result.pages || []);
+      
       if (result.pages && result.pages.length > 0) {
-        console.log('✅ Fetched', result.pages.length, 'Facebook pages');
+        console.log('✅ [Client] Fetched', result.pages.length, 'Facebook pages');
+        
+        // Log Instagram status for each page
+        result.pages.forEach((page: any) => {
+          if (page.instagram_business_account) {
+            console.log(`  📸 [Client] "${page.name}" has Instagram: @${page.instagram_business_account.username}`);
+          } else {
+            console.log(`  📘 [Client] "${page.name}" - no Instagram`);
+          }
+        });
+      } else {
+        console.warn('⚠️ [Client] No pages returned');
       }
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Failed to fetch pages';
-      console.error('❌ Failed to fetch pages:', error);
+      console.error('❌ [Client] Failed to fetch pages:', error);
       setFacebookError(errorMsg);
       setPages([]);
     } finally {
@@ -661,6 +677,17 @@ export const ProfilePage = () => {
                           <div className="flex items-center gap-2 rounded-lg bg-blue-50 p-2 text-xs text-blue-700 border border-blue-200">
                             <CheckCircle className="h-3 w-3" />
                             <span>This page has Instagram Business Account: <strong>@{pages.find(p => p.id === selectedPage)?.instagram_business_account?.username}</strong></span>
+                          </div>
+                        )}
+                        {pages.every(p => !p.instagram_business_account) && (
+                          <div className="rounded-lg bg-amber-50 p-3 text-xs text-amber-800 border border-amber-200">
+                            <p className="font-semibold mb-1">No Instagram Business Accounts found</p>
+                            <p className="mb-2">To connect Instagram, you need to:</p>
+                            <ol className="list-decimal ml-4 space-y-1">
+                              <li>Convert your Instagram account to a Business Account</li>
+                              <li>Link it to your Facebook Page in Facebook Page Settings</li>
+                              <li>Disconnect and reconnect Facebook here to refresh permissions</li>
+                            </ol>
                           </div>
                         )}
                       </div>
