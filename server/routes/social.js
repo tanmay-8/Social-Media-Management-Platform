@@ -66,30 +66,55 @@ router.post('/connect/facebook', auth, async (req, res) => {
         const connectedPage = pagesResult.pages?.find(p => p.id === pageId);
         const pageName = connectedPage?.name || '';
 
-        // Update user profile with page info
+        // Check if the page has an Instagram Business Account
+        let instagramBusinessId = null;
+        let instagramHandle = null;
+        if (connectedPage?.instagram_business_account) {
+            instagramBusinessId = connectedPage.instagram_business_account.id;
+            instagramHandle = connectedPage.instagram_business_account.username;
+            console.log('📸 Page has Instagram Business Account:', instagramHandle);
+        } else {
+            console.log('⚠️  Page does not have Instagram Business Account connected');
+        }
+
+        // Update user profile with page info and Instagram if available
         console.log('🔵 Updating user profile...');
+        const updateData = {
+            'profile.facebookPageId': pageId,
+            'profile.facebookPageName': pageName,
+            'profile.facebookPageAccessToken': pageAccessToken,
+            updatedAt: new Date()
+        };
+
+        // Add Instagram data if available
+        if (instagramBusinessId) {
+            updateData['profile.instagramBusinessId'] = instagramBusinessId;
+            updateData['profile.instagramHandle'] = instagramHandle;
+            updateData['profile.instagramAccessToken'] = userAccessToken; // Use same access token
+        }
+
         const user = await User.findByIdAndUpdate(
             req.user._id,
-            {
-                $set: {
-                    'profile.facebookPageId': pageId,
-                    'profile.facebookPageName': pageName,
-                    'profile.facebookPageAccessToken': pageAccessToken,
-                    updatedAt: new Date()
-                }
-            },
+            { $set: updateData },
             { new: true }
         ).select('-password');
 
         console.log('✅ Successfully connected page:', pageName);
+        if (instagramBusinessId) {
+            console.log('✅ Instagram also connected:', instagramHandle);
+        }
 
         res.json({
-            message: 'Facebook page connected successfully',
+            message: instagramBusinessId 
+                ? `Facebook page connected successfully! Instagram (@${instagramHandle}) also connected.`
+                : 'Facebook page connected successfully',
             user: {
                 id: user._id,
                 name: user.name,
                 facebookPageId: pageId,
-                facebookPageName: pageName
+                facebookPageName: pageName,
+                instagramConnected: !!instagramBusinessId,
+                instagramHandle: instagramHandle
             }
         });
 

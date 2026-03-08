@@ -104,10 +104,22 @@ async function getUserPages(accessToken) {
             `${FACEBOOK_GRAPH_URL}/me/accounts`,
             {
                 params: {
+                    fields: 'id,name,access_token,instagram_business_account{id,username,profile_picture_url}',
                     access_token: accessToken
                 }
             }
         );
+
+        console.log(`✅ Fetched ${response.data.data.length} Facebook pages`);
+        
+        // Log which pages have Instagram connected
+        response.data.data.forEach(page => {
+            if (page.instagram_business_account) {
+                console.log(`  📸 Page "${page.name}" has Instagram: @${page.instagram_business_account.username}`);
+            } else {
+                console.log(`  📘 Page "${page.name}" (no Instagram Business Account)`);
+            }
+        });
 
         return {
             success: true,

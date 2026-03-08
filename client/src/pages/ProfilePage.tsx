@@ -297,8 +297,15 @@ export const ProfilePage = () => {
         pageAccessToken: '' // No longer needed - server will get it
       });
 
-      console.log('✅ Page connected successfully');
-      setFacebookSuccess('Facebook Page connected successfully!');
+      console.log('✅ Page connected successfully:', result);
+      
+      // Show success message - check if Instagram was also connected
+      if (result.user?.instagramConnected && result.user?.instagramHandle) {
+        setFacebookSuccess(`Facebook Page connected! Instagram (@${result.user.instagramHandle}) also connected.`);
+      } else {
+        setFacebookSuccess('Facebook Page connected successfully!');
+      }
+      
       setSelectedPage(''); // Reset selection
       
       // Refresh user data
@@ -310,10 +317,11 @@ export const ProfilePage = () => {
         role: userResult.user.role,
         facebookId: userResult.user.facebookId,
         facebookPageName: userResult.user.profile?.facebookPageName,
-        photoUrl: userResult.user.profile?.footerImage?.url
+        photoUrl: userResult.user.profile?.footerImage?.url,
+        instagramHandle: userResult.user.profile?.instagramHandle
       });
 
-      setTimeout(() => setFacebookSuccess(null), 3000);
+      setTimeout(() => setFacebookSuccess(null), 5000);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to connect page';
       console.error('❌ Failed to connect page:', error);
@@ -626,27 +634,35 @@ export const ProfilePage = () => {
                         Loading pages...
                       </div>
                     ) : pages.length > 0 ? (
-                      <div className="flex gap-2">
-                        <select
-                          value={selectedPage}
-                          onChange={(e) => setSelectedPage(e.target.value)}
-                          className="flex-1 rounded-lg border border-[rgba(0,48,73,0.3)] bg-white px-3 py-2 text-[0.85rem] text-[#003049] focus:border-[#669bbc] focus:outline-none focus:ring-2 focus:ring-[#669bbc]/20"
-                        >
-                          <option value="">Select a page</option>
-                          {pages.map((page) => (
-                            <option key={page.id} value={page.id}>
-                              {page.name}
-                            </option>
-                          ))}
-                        </select>
-                        <button
-                          type="button"
-                          onClick={handleConnectPage}
-                          disabled={!selectedPage}
-                          className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[#669bbc] bg-[#669bbc] px-4 py-2 text-[0.85rem] text-white transition-all duration-150 hover:bg-[#003049] disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          Connect Page
-                        </button>
+                      <div className="space-y-3">
+                        <div className="flex gap-2">
+                          <select
+                            value={selectedPage}
+                            onChange={(e) => setSelectedPage(e.target.value)}
+                            className="flex-1 rounded-lg border border-[rgba(0,48,73,0.3)] bg-white px-3 py-2 text-[0.85rem] text-[#003049] focus:border-[#669bbc] focus:outline-none focus:ring-2 focus:ring-[#669bbc]/20"
+                          >
+                            <option value="">Select a page</option>
+                            {pages.map((page) => (
+                              <option key={page.id} value={page.id}>
+                                {page.name} {page.instagram_business_account ? `📸 @${page.instagram_business_account.username}` : '(no Instagram)'}
+                              </option>
+                            ))}
+                          </select>
+                          <button
+                            type="button"
+                            onClick={handleConnectPage}
+                            disabled={!selectedPage}
+                            className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[#669bbc] bg-[#669bbc] px-4 py-2 text-[0.85rem] text-white transition-all duration-150 hover:bg-[#003049] disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            Connect Page
+                          </button>
+                        </div>
+                        {selectedPage && pages.find(p => p.id === selectedPage)?.instagram_business_account && (
+                          <div className="flex items-center gap-2 rounded-lg bg-blue-50 p-2 text-xs text-blue-700 border border-blue-200">
+                            <CheckCircle className="h-3 w-3" />
+                            <span>This page has Instagram Business Account: <strong>@{pages.find(p => p.id === selectedPage)?.instagram_business_account?.username}</strong></span>
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <p className="text-[0.8rem] text-[#7f7270]">

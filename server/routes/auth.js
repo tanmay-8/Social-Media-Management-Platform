@@ -238,23 +238,28 @@ router.get('/facebook/callback', async (req, res) => {
         try {
             const pagesResponse = await axios.get('https://graph.facebook.com/v21.0/me/accounts', {
                 params: {
-                    fields: 'id,name,instagram_business_account{id,username}',
+                    fields: 'id,name,access_token,instagram_business_account{id,username,profile_picture_url}',
                     access_token
                 }
             });
             
             const pages = pagesResponse.data.data || [];
+            console.log(`📋 Found ${pages.length} Facebook pages`);
+            
             const pageWithInstagram = pages.find(page => page.instagram_business_account);
             
             if (pageWithInstagram) {
                 instagramBusinessId = pageWithInstagram.instagram_business_account.id;
                 instagramHandle = pageWithInstagram.instagram_business_account.username;
-                console.log('✅ Instagram Business Account found:', { instagramBusinessId, instagramHandle });
+                console.log('✅ Instagram Business Account found:', { instagramBusinessId, instagramHandle, pageId: pageWithInstagram.id, pageName: pageWithInstagram.name });
             } else {
                 console.log('⚠️ No Instagram Business Account linked to Facebook Pages');
+                if (pages.length > 0) {
+                    console.log('   💡 Tip: Connect an Instagram Business Account to one of your Facebook Pages');
+                }
             }
         } catch (igError) {
-            console.log('⚠️ Could not fetch Instagram Business Account:', igError.message);
+            console.error('❌ Error fetching Instagram Business Account:', igError.response?.data || igError.message);
         }
 
         let user;
