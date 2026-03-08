@@ -7,6 +7,7 @@ const User = require('../models/User');
 const Festival = require('../models/Festival');
 const { composeAndUpload } = require('../utils/composer');
 const { postToFacebook } = require('../utils/facebookAPI');
+const { postToInstagram } = require('../utils/instagramAPI');
 
 const router = express.Router();
 
@@ -78,7 +79,7 @@ router.post('/test', auth, async (req, res) => {
 
 /**
  * @route   POST /api/compose/post-now
- * @desc    Immediately compose and post a festival to Facebook
+ * @desc    Immediately compose and post a festival to Facebook and Instagram
  * @access  Private
  */
 router.post('/post-now', auth, async (req, res) => {
@@ -128,23 +129,114 @@ router.post('/post-now', auth, async (req, res) => {
         );
 
         console.log(`[POST NOW] Image composed: ${composedResult.secure_url}`);
-        console.log(`[POST NOW] Posting to Facebook page: ${user.profile.facebookPageId}`);
+
+        const caption = `Happy ${festival.name}! 🎉\n\n${festival.description || 'Wishing you joy and prosperity!'}`;
+        const results = {
+            facebook: null,
+            instagram: null
+        };
 
         // Post to Facebook
-        const fbResponse = await postToFacebook(
-            user.profile.facebookPageAccessToken,
-            user.profile.facebookPageId,
-            composedResult.secure_url,
-            `Happy ${festival.name}! 🎉\n\n${festival.description || 'Wishing you joy and prosperity!'}`
-        );
+        console.log(`[POST NOW] Posting to Facebook page: ${user.profile.facebookPageId}`);
+        try {
+            const fbResponse = await postToFacebook(
+                user.profile.facebookPageAccessToken,
+                user.profile.facebookPageId,
+                composedResult.secure_url,
+                caption
+            );
 
-        console.log(`[POST NOW] Successfully posted to Facebook:`, fbResponse);
+            if (fbResponse.success) {
+                console.log(`✅ [POST NOW] Successfully posted to Facebook:`, fbResponse);
+                results.facebook = {
+                    success: true,
+                    postId: fbResponse.postId
+                };
+            } else {
+                console.error(`❌ [POST NOW] Facebook post failed:`, fbResponse.error);
+                results.facebook = {
+                    success: false,
+                    error: fbResponse.error
+                };
+            }
+        } catch (fbError) {
+            console.error(`❌ [POST NOW] Facebook posting exception:`, fbError.message);
+            results.facebook = {
+                success: false,
+                error: fbError.message
+            };
+        }
+
+        // Post to Instagram (if connected)
+        if (user.profile?.instagramAccessToken && user.profile?.instagramBusinessId) {
+            console.log(`[POST NOW] Posting to Instagram: ${user.profile.instagramBusinessId}`);
+            try {
+                const igResponse = await postToInstagram(
+                    user.profile.instagramAccessToken,
+                    user.profile.instagramBusinessId,
+                    composedResult.secure_url,
+                    caption
+                );
+
+                if (igResponse.success) {
+                    console.log(`✅ [POST NOW] Successfully posted to Instagram:`, igResponse);
+                    results.instagram = {
+                        success: true,
+                        mediaId: igResponse.mediaId
+                    };
+                } else {
+                    console.error(`❌ [POST NOW] Instagram post failed:`, igResponse.error);
+                    results.instagram = {
+                        success: false,
+                        error: igResponse.error
+                    };
+                }
+            } catch (igError) {
+                console.error(`❌ [POST NOW] Instagram posting exception:`, igError.message);
+                results.instagram = {
+                    success: false,
+                    error: igError.message
+                };
+            }
+        } else {
+            console.log(`ℹ️ [POST NOW] Instagram not connected - skipping`);
+            results.instagram = {
+                success: false,
+                error: 'Instagram not connected'
+            };
+        }
+
+        // Determine overall success
+        const facebookSuccess = results.facebook?.success;
+        const instagramSuccess = results.instagram?.success;
+        const bothFailed = !facebookSuccess && !instagramSuccess;
+
+        if (bothFailed && user.profile?.instagramBusinessId) {
+            return res.status(500).json({
+                message: 'Failed to post to both Facebook and Instagram',
+                results
+            });
+        } else if (bothFailed) {
+            return res.status(500).json({
+                message: 'Failed to post to Facebook',
+                results
+            });
+        }
+
+        // Build success message
+        let message = 'Posted successfully';
+        const platforms = [];
+        if (facebookSuccess) platforms.push('Facebook');
+        if (instagramSuccess) platforms.push('Instagram');
+        if (platforms.length > 0) {
+            message += ' to ' + platforms.join(' and ');
+        }
 
         res.json({
-            message: 'Posted successfully to Facebook',
+            message,
             festivalName: festival.name,
-            postId: fbResponse.postId,
-            imageUrl: composedResult.secure_url
+            imageUrl: composedResult.secure_url,
+            results
         });
 
     } catch (error) {

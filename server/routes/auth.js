@@ -156,9 +156,12 @@ router.get('/facebook', auth.optional, (req, res) => {
         'pages_show_list',
         'pages_read_engagement',
         'pages_manage_posts',
+        'pages_manage_metadata',
         'instagram_basic',
         'instagram_content_publish'
     ].join(',');
+    
+    console.log('🔑 Requesting OAuth scopes:', scopes);
     
     // Include user ID in state if user is authenticated (connecting account)
     const stateData = {

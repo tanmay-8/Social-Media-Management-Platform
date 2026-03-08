@@ -203,6 +203,67 @@ router.post('/connect/instagram', auth, async (req, res) => {
 
 /**
  * @swagger
+ * /api/social/pages/debug:
+ *   get:
+ *     summary: Debug Facebook pages API response
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Debug information
+ */
+router.get('/pages/debug', auth, async (req, res) => {
+    try {
+        const accessToken = req.user.profile?.facebookAccessToken;
+
+        if (!accessToken) {
+            return res.status(400).json({ message: 'No Facebook account connected' });
+        }
+
+        console.log('🔍 [DEBUG] Testing Facebook API...');
+        
+        // Test 1: Check token validity
+        const tokenCheck = await validateFacebookToken(accessToken);
+        console.log('🔍 [DEBUG] Token valid:', tokenCheck.valid);
+
+        // Test 2: Get user info
+        const userResponse = await require('axios').get('https://graph.facebook.com/v21.0/me', {
+            params: {
+                fields: 'id,name,email',
+                access_token: accessToken
+            }
+        });
+        console.log('🔍 [DEBUG] User info:', userResponse.data);
+
+        // Test 3: Get pages with full data
+        const pagesResult = await getUserPages(accessToken);
+        console.log('🔍 [DEBUG] Pages result:', JSON.stringify(pagesResult, null, 2));
+
+        res.json({
+            message: 'Debug information',
+            tokenValid: tokenCheck.valid,
+            userInfo: userResponse.data,
+            pagesResult: pagesResult,
+            tips: [
+                'If pages show no Instagram data, check:',
+                '1. Your Facebook Page is linked to an Instagram Business Account (not Personal)',
+                '2. You need to reconnect Facebook to grant new permissions',
+                '3. Instagram account must be a Business Account, not Creator or Personal',
+                '4. The connection must be made in Facebook Page Settings > Instagram'
+            ]
+        });
+    } catch (error) {
+        console.error('🔍 [DEBUG] Error:', error);
+        res.status(500).json({ 
+            message: 'Debug failed', 
+            error: error.message,
+            details: error.response?.data 
+        });
+    }
+});
+
+/**
+ * @swagger
  * /api/social/pages:
  *   get:
  *     summary: Get user's Facebook pages
@@ -221,15 +282,24 @@ router.get('/pages', auth, async (req, res) => {
             return res.status(400).json({ message: 'No Facebook account connected. Please connect your Facebook account first.' });
         }
 
-        console.log('🔵 Fetching Facebook pages for user:', req.user._id);
+        console.log('🔵 [/api/social/pages] Fetching Facebook pages for user:', req.user._id);
+        console.log('🔵 [/api/social/pages] User has access token:', !!accessToken);
+        
         const result = await getUserPages(accessToken);
 
         if (!result.success) {
-            console.error('❌ Failed to fetch pages:', result.error);
+            console.error('❌ [/api/social/pages] Failed to fetch pages:', result.error);
             return res.status(400).json({ message: 'Failed to fetch pages', error: result.error });
         }
 
-        console.log('✅ Successfully fetched', result.pages.length, 'pages');
+        console.log('✅ [/api/social/pages] Successfully fetched', result.pages.length, 'pages');
+        console.log('📤 [/api/social/pages] Sending pages to client:', JSON.stringify(result.pages.map(p => ({
+            id: p.id,
+            name: p.name,
+            hasInstagram: !!p.instagram_business_account,
+            instagramHandle: p.instagram_business_account?.username
+        })), null, 2));
+        
         res.json({
             message: 'Pages fetched successfully',
             pages: result.pages

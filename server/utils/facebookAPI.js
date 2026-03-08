@@ -100,6 +100,10 @@ async function validateFacebookToken(accessToken) {
  */
 async function getUserPages(accessToken) {
     try {
+        console.log('🔍 [getUserPages] Requesting Facebook pages with Instagram data...');
+        console.log('🔍 [getUserPages] API URL:', `${FACEBOOK_GRAPH_URL}/me/accounts`);
+        console.log('🔍 [getUserPages] Fields requested: id,name,access_token,instagram_business_account{id,username,profile_picture_url}');
+        
         const response = await axios.get(
             `${FACEBOOK_GRAPH_URL}/me/accounts`,
             {
@@ -111,13 +115,14 @@ async function getUserPages(accessToken) {
         );
 
         console.log(`✅ Fetched ${response.data.data.length} Facebook pages`);
+        console.log('📋 [getUserPages] Raw response data:', JSON.stringify(response.data.data, null, 2));
         
         // Log which pages have Instagram connected
         response.data.data.forEach(page => {
             if (page.instagram_business_account) {
-                console.log(`  📸 Page "${page.name}" has Instagram: @${page.instagram_business_account.username}`);
+                console.log(`  📸 Page "${page.name}" (ID: ${page.id}) has Instagram: @${page.instagram_business_account.username} (ID: ${page.instagram_business_account.id})`);
             } else {
-                console.log(`  📘 Page "${page.name}" (no Instagram Business Account)`);
+                console.log(`  📘 Page "${page.name}" (ID: ${page.id}) - no Instagram Business Account linked`);
             }
         });
 
@@ -127,6 +132,14 @@ async function getUserPages(accessToken) {
         };
     } catch (error) {
         console.error('❌ Error fetching Facebook pages:', error.response?.data || error.message);
+        if (error.response?.data?.error) {
+            console.error('❌ Facebook API Error Details:', {
+                message: error.response.data.error.message,
+                type: error.response.data.error.type,
+                code: error.response.data.error.code,
+                fbtrace_id: error.response.data.error.fbtrace_id
+            });
+        }
         return {
             success: false,
             error: error.response?.data?.error?.message || error.message,
