@@ -150,15 +150,17 @@ router.get('/facebook', auth.optional, (req, res) => {
     console.log('Facebook App ID:', process.env.FACEBOOK_APP_ID);
     
     // Use explicit scopes for Facebook Pages, Instagram, and user profile
+    // IMPORTANT: instagram_manage_comments is required to read instagram_business_account field
     const scopes = [
         'email',
         'public_profile',
         'pages_show_list',
         'pages_read_engagement',
         'pages_manage_posts',
-        'pages_manage_metadata',
         'instagram_basic',
-        'instagram_content_publish'
+        'instagram_content_publish',
+        'instagram_manage_comments',
+        'pages_read_user_content'
     ].join(',');
     
     console.log('🔑 Requesting OAuth scopes:', scopes);
@@ -239,30 +241,47 @@ router.get('/facebook/callback', async (req, res) => {
         let instagramBusinessId = null;
         let instagramHandle = null;
         try {
-            const pagesResponse = await axios.get('https://graph.facebook.com/v21.0/me/accounts', {
-                params: {
-                    fields: 'id,name,access_token,instagram_business_account{id,username,profile_picture_url}',
-                    access_token
-                }
-            });
+            // Use string interpolation to avoid axios URL encoding issues with nested fields
+            const fieldsParam = 'id,name,access_token,instagram_business_account{id,username,profile_picture_url}';
+            const apiUrl = `https://graph.facebook.com/v21.0/me/accounts?fields=${encodeURIComponent(fieldsParam)}&access_token=${encodeURIComponent(access_token)}`;
+            
+            console.log('🔍 Making API call to fetch pages with Instagram data...');
+            console.log('🔍 Fields parameter:', fieldsParam);
+            
+            const pagesResponse = await axios.get(apiUrl);
             
             const pages = pagesResponse.data.data || [];
             console.log(`📋 Found ${pages.length} Facebook pages`);
+            console.log('📋 Raw pages data:', JSON.stringify(pages, null, 2));
+            
+            // Check each page for Instagram connection
+            pages.forEach((page, index) => {
+                console.log(`\n📄 Page ${index + 1}: ${page.name} (ID: ${page.id})`);
+                if (page.instagram_business_account) {
+                    console.log(`  ✅ HAS Instagram: @${page.instagram_business_account.username} (ID: ${page.instagram_business_account.id})`);
+                } else {
+                    console.log(`  ❌ NO Instagram Business Account linked`);
+                }
+            });
             
             const pageWithInstagram = pages.find(page => page.instagram_business_account);
             
             if (pageWithInstagram) {
                 instagramBusinessId = pageWithInstagram.instagram_business_account.id;
                 instagramHandle = pageWithInstagram.instagram_business_account.username;
-                console.log('✅ Instagram Business Account found:', { instagramBusinessId, instagramHandle, pageId: pageWithInstagram.id, pageName: pageWithInstagram.name });
+                console.log('\n✅ Instagram Business Account found:', { instagramBusinessId, instagramHandle, pageId: pageWithInstagram.id, pageName: pageWithInstagram.name });
             } else {
-                console.log('⚠️ No Instagram Business Account linked to Facebook Pages');
+                console.log('\n⚠️ No Instagram Business Account linked to any Facebook Pages');
                 if (pages.length > 0) {
                     console.log('   💡 Tip: Connect an Instagram Business Account to one of your Facebook Pages');
+                    console.log('   💡 The Instagram account MUST be a Business Account (not Personal or Creator)');
                 }
             }
         } catch (igError) {
             console.error('❌ Error fetching Instagram Business Account:', igError.response?.data || igError.message);
+            if (igError.response?.data) {
+                console.error('❌ Facebook API Error Details:', JSON.stringify(igError.response.data, null, 2));
+            }
         }
 
         let user;

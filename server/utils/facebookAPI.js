@@ -108,7 +108,7 @@ async function getUserPages(accessToken) {
             `${FACEBOOK_GRAPH_URL}/me/accounts`,
             {
                 params: {
-                    fields: 'id,name,access_token',
+                    fields: 'id,name,access_token,instagram_business_account{id,username,profile_picture_url}',
                     access_token: accessToken
                 }
             }
