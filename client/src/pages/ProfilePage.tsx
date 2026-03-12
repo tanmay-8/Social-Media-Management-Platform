@@ -692,9 +692,28 @@ export const ProfilePage = () => {
                         )}
                       </div>
                     ) : (
-                      <p className="text-[0.8rem] text-[#7f7270]">
-                        No pages found. Make sure you have Facebook pages associated with your account.
-                      </p>
+                      <div className="space-y-3">
+                        <p className="text-[0.8rem] text-[#7f7270]">
+                          No Facebook pages found.
+                        </p>
+                        <div className="rounded-lg bg-amber-50 p-3 text-xs text-amber-800 border border-amber-200">
+                          <p className="font-semibold mb-2">⚠️ Why aren't my pages showing?</p>
+                          <p className="mb-2">Facebook returns 0 pages when:</p>
+                          <ol className="list-decimal ml-4 space-y-1 mb-3">
+                            <li><strong>You're not an ADMIN or EDITOR</strong> of any Facebook page (just a follower won't work)</li>
+                            <li><strong>You didn't select pages</strong> during Facebook login - Facebook may ask "Which pages do you want to give access to?"</li>
+                            <li><strong>The page is a Personal Profile</strong> not a Business Page</li>
+                            <li><strong>App permissions not granted</strong> - Check Facebook Settings → Business Integrations</li>
+                          </ol>
+                          <p className="font-semibold mb-1">✅ Solutions:</p>
+                          <ul className="list-disc ml-4 space-y-1">
+                            <li>Make sure you're at least an <strong>EDITOR</strong> on the Facebook page</li>
+                            <li>Visit <a href="https://www.facebook.com/settings?tab=business_tools" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">Facebook Business Integrations</a> and remove this app, then reconnect</li>
+                            <li>When connecting, carefully look for page selection dialog and check all pages</li>
+                            <li>Ensure the page is a Business Page, not a personal profile</li>
+                          </ul>
+                        </div>
+                      </div>
                     )}
                   </div>
                 </div>

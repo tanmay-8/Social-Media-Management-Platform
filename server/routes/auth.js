@@ -172,7 +172,12 @@ router.get('/facebook', auth.optional, (req, res) => {
     };
     const state = Buffer.from(JSON.stringify(stateData)).toString('base64');
     
-    const fbAuthUrl = `https://www.facebook.com/v21.0/dialog/oauth?client_id=${process.env.FACEBOOK_APP_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scopes}&response_type=code&state=${state}`;
+    // Build Facebook OAuth URL with auth_type=rerequest to show all permissions
+    // This ensures users see the page selection dialog
+    const fbAuthUrl = `https://www.facebook.com/v21.0/dialog/oauth?client_id=${process.env.FACEBOOK_APP_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scopes}&response_type=code&state=${state}&auth_type=rerequest`;
+    
+    console.log('🔗 Facebook Auth URL generated');
+    console.log('📋 Auth type: rerequest (shows all permissions dialog)');
     
     res.redirect(fbAuthUrl);
 });

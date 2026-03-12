@@ -222,12 +222,21 @@ router.get('/pages/debug', auth, async (req, res) => {
 
         console.log('🔍 [DEBUG] Testing Facebook API...');
         
-        // Test 1: Check token validity
-        const tokenCheck = await validateFacebookToken(accessToken);
-        console.log('🔍 [DEBUG] Token valid:', tokenCheck.valid);
+        // Test 1: Check token validity and permissions
+        const axios = require('axios');
+        const debugTokenResponse = await axios.get('https://graph.facebook.com/v21.0/debug_token', {
+            params: {
+                input_token: accessToken,
+                access_token: `${process.env.FACEBOOK_APP_ID}|${process.env.FACEBOOK_APP_SECRET}`
+            }
+        });
+        
+        console.log('🔍 [DEBUG] Token permissions:', debugTokenResponse.data.data.scopes);
+        console.log('🔍 [DEBUG] Token valid:', debugTokenResponse.data.data.is_valid);
+        console.log('🔍 [DEBUG] User ID:', debugTokenResponse.data.data.user_id);
 
         // Test 2: Get user info
-        const userResponse = await require('axios').get('https://graph.facebook.com/v21.0/me', {
+        const userResponse = await axios.get('https://graph.facebook.com/v21.0/me', {
             params: {
                 fields: 'id,name,email',
                 access_token: accessToken
@@ -235,22 +244,50 @@ router.get('/pages/debug', auth, async (req, res) => {
         });
         console.log('🔍 [DEBUG] User info:', userResponse.data);
 
-        // Test 3: Get pages with full data
-        const pagesResult = await getUserPages(accessToken);
-        console.log('🔍 [DEBUG] Pages result:', JSON.stringify(pagesResult, null, 2));
+        // Test 3: Get accounts/pages with detailed error handling
+        let pagesResult;
+        try {
+            pagesResult = await getUserPages(accessToken);
+            console.log('🔍 [DEBUG] Pages result:', JSON.stringify(pagesResult, null, 2));
+        } catch (pageError) {
+            console.error('🔍 [DEBUG] Pages error:', pageError);
+            pagesResult = { success: false, error: pageError.message };
+        }
+
+        // Test 4: Try alternative endpoints
+        let accountsData = null;
+        try {
+            const accountsResponse = await axios.get('https://graph.facebook.com/v21.0/me/accounts', {
+                params: {
+                    access_token: accessToken
+                }
+            });
+            accountsData = accountsResponse.data;
+            console.log('🔍 [DEBUG] Raw /me/accounts response:', JSON.stringify(accountsData, null, 2));
+        } catch (accountsError) {
+            console.error('🔍 [DEBUG] Accounts error:', accountsError.response?.data || accountsError.message);
+        }
 
         res.json({
             message: 'Debug information',
-            tokenValid: tokenCheck.valid,
+            tokenPermissions: debugTokenResponse.data.data.scopes,
+            tokenValid: debugTokenResponse.data.data.is_valid,
+            userId: debugTokenResponse.data.data.user_id,
             userInfo: userResponse.data,
             pagesResult: pagesResult,
-            tips: [
-                'If pages show no Instagram data, check:',
-                '1. Your Facebook Page is linked to an Instagram Business Account (not Personal)',
-                '2. You need to reconnect Facebook to grant new permissions',
-                '3. Instagram account must be a Business Account, not Creator or Personal',
-                '4. The connection must be made in Facebook Page Settings > Instagram'
-            ]
+            rawAccountsData: accountsData,
+            troubleshooting: {
+                zeroPages: 'If 0 pages returned, check these:',
+                steps: [
+                    '1. Are you an ADMIN or EDITOR of the Facebook page? (Not just a follower)',
+                    '2. During Facebook login, did you select which pages to give access to?',
+                    '3. Is the page a Business page (not a Personal profile)?',
+                    '4. Go to facebook.com/settings?tab=business_tools and check app permissions',
+                    '5. Try removing the app from Facebook settings and reconnecting'
+                ],
+                requiredRole: 'You must be at least an EDITOR on the Facebook page',
+                checkPermissions: 'Visit: https://www.facebook.com/settings?tab=business_tools'
+            }
         });
     } catch (error) {
         console.error('🔍 [DEBUG] Error:', error);
