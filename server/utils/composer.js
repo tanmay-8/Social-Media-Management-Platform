@@ -6,12 +6,11 @@ const { uploadStream } = require('./cloudinary');
 /**
  * Compose a professional poster-style image optimized for Instagram
  * Festival image fills the full canvas
- * Footer section (23%) overlays at the bottom using bottom-anchored crop
- * If footer aspect ratio does not match target slot, crop from bottom to fit
+ * Footer is placed at the bottom as uploaded, without cropping or resizing
  * Final output: 1080x1350 (4:5 aspect ratio - Instagram portrait optimal)
  * 
  * @param {string} baseUrl - Festival image URL
- * @param {string} footerUrl - User's footer/branding image URL (will be made horizontal)
+ * @param {string} footerUrl - User's footer/branding image URL
  * @param {Object} options - Composition options
  * @returns {Promise<Object>} Cloudinary upload result
  */
@@ -19,10 +18,6 @@ async function composeAndUpload(baseUrl, footerUrl, options = {}) {
     // Instagram optimal sizes: 1080x1350 (4:5 portrait) - most feed real estate
     const finalWidth = options.width || 1080;
     const finalHeight = options.height || 1350; // Changed from 1080 to 1350 for Instagram 4:5 ratio
-    
-    // Festival fills the full image. Footer overlays the bottom 23%.
-    const footerHeight = Math.floor(finalHeight * 0.23);
-    const footerTop = finalHeight - footerHeight;
     const seamBlendHeight = Math.max(12, Math.floor(finalHeight * 0.012));
 
     try {
@@ -43,21 +38,20 @@ async function composeAndUpload(baseUrl, footerUrl, options = {}) {
             })
             .toBuffer();
 
-        // Step 2: Normalize footer to exact slot using bottom-anchored crop.
-        // This keeps the lower part of uploaded footer, which typically contains logos/text.
+        // Step 2: Keep footer as uploaded. No crop or resize constraints are applied.
         const processedFooter = await sharp(footerBuffer)
-            .resize(finalWidth, footerHeight, {
-                fit: 'cover',
-                position: 'south'
-            })
+            .png()
             .toBuffer();
+
+        const footerMetadata = await sharp(processedFooter).metadata();
+        const footerVisibleHeight = Math.min(footerMetadata.height || 0, finalHeight);
+        const footerTop = Math.max(0, finalHeight - footerVisibleHeight);
 
         // Step 3: Overlay footer on top of festival image at the bottom.
         let finalComposition = await sharp(festivalImage)
             .composite([{
                 input: processedFooter,
-                top: footerTop,
-                left: 0
+                gravity: 'south'
             }])
             .png()
             .toBuffer();
