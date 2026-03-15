@@ -27,6 +27,63 @@ router.get('/', auth, async (req, res) => {
 
 /**
  * @swagger
+ * /api/scheduled/posted:
+ *   get:
+ *     summary: List user's successfully posted posts
+ *     security:
+ *       - bearerAuth: []
+ */
+router.get('/posted', auth, async (req, res) => {
+    try {
+        const posts = await ScheduledPost.find({
+            user: req.user._id,
+            status: 'posted'
+        })
+            .populate('festival')
+            .sort({ scheduledAt: -1, createdAt: -1 });
+
+        const normalizedPosts = posts
+            .map((post) => {
+                const imageUrl =
+                    post.result?.composedImageUrl ||
+                    post.result?.composed?.secure_url ||
+                    post.result?.composed?.url ||
+                    null;
+
+                const postedAt =
+                    post.result?.postedAt ||
+                    post.platforms?.facebook?.postedAt ||
+                    post.platforms?.instagram?.postedAt ||
+                    post.scheduledAt ||
+                    post.createdAt;
+
+                if (!imageUrl) {
+                    return null;
+                }
+
+                return {
+                    _id: post._id,
+                    status: post.status,
+                    scheduledAt: post.scheduledAt,
+                    createdAt: post.createdAt,
+                    postedAt,
+                    imageUrl,
+                    festival: post.festival,
+                    platforms: post.platforms || {}
+                };
+            })
+            .filter(Boolean)
+            .sort((left, right) => new Date(right.postedAt).getTime() - new Date(left.postedAt).getTime());
+
+        res.json({ posts: normalizedPosts });
+    } catch (err) {
+        console.error('List posted posts error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+/**
+ * @swagger
  * /api/scheduled:
  *   post:
  *     summary: Create a manual scheduled post (immediate or future)

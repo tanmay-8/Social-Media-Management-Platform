@@ -14,6 +14,34 @@ export interface ScheduledPost {
   createdAt: string;
 }
 
+export interface PostedPost {
+  _id: string;
+  status: 'posted';
+  imageUrl: string;
+  scheduledAt: string;
+  createdAt: string;
+  postedAt: string;
+  festival?: {
+    _id: string;
+    name: string;
+    date: string;
+    baseImage?: {
+      url: string;
+      public_id?: string;
+    };
+  };
+  platforms?: {
+    facebook?: {
+      status?: 'pending' | 'posted' | 'failed';
+      postedAt?: string;
+    };
+    instagram?: {
+      status?: 'pending' | 'posted' | 'failed';
+      postedAt?: string;
+    };
+  };
+}
+
 export interface CreateScheduledPost {
   festivalId: string;
   scheduledDate: string;
@@ -25,6 +53,11 @@ export const scheduledService = {
   // Get all scheduled posts for current user
   async getScheduledPosts() {
     return api.get<{ posts: ScheduledPost[] }>('/api/scheduled');
+  },
+
+  // Get all posted posts for current user
+  async getPostedPosts() {
+    return api.get<{ posts: PostedPost[] }>('/api/scheduled/posted');
   },
 
   // Create a new scheduled post

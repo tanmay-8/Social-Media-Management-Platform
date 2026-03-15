@@ -1,18 +1,23 @@
-import { useAppStore } from '../store';
-import { Calendar, Loader2, Clock, AlertCircle } from 'lucide-react';
+import { useAppStore, type AppState } from '../store';
+import { Calendar, Loader2, Clock, AlertCircle, Download, CheckCircle2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { festivalService } from '../services/festivalService';
+import { scheduledService, type PostedPost } from '../services/scheduledService';
 import { subscriptionService } from '../services/subscriptionService';
+import type { Festival } from '../types';
 
 export const HomePage = () => {
-  const user = useAppStore((s) => s.user);
-  const subscription = useAppStore((s) => s.subscription);
-  const setSubscription = useAppStore((s) => s.setSubscription);
+  const user = useAppStore((s: AppState) => s.user);
+  const subscription = useAppStore((s: AppState) => s.subscription);
+  const setSubscription = useAppStore((s: AppState & { setSubscription: (subscription: AppState['subscription']) => void }) => s.setSubscription);
   const navigate = useNavigate();
-  const [festivals, setFestivals] = useState<any[]>([]);
+  const [festivals, setFestivals] = useState<Festival[]>([]);
+  const [postedPosts, setPostedPosts] = useState<PostedPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [setupMessage, setSetupMessage] = useState<string | null>(null);
+  const [downloadingPostId, setDownloadingPostId] = useState<string | null>(null);
 
   useEffect(() => {
     checkUserSetup();
@@ -21,6 +26,7 @@ export const HomePage = () => {
   const checkUserSetup = async () => {
     setLoading(true);
     setError(null);
+    setSetupMessage(null);
 
     try {
       // First, fetch subscription status from backend
@@ -42,25 +48,17 @@ export const HomePage = () => {
         setSubscription(null);
       }
 
-      // Check if user has Facebook connected
+      const setupIssues: string[] = [];
       if (!user?.facebookId) {
-        setError('Please connect your Facebook account to use automatic posting.');
-        setTimeout(() => {
-          navigate('/profile');
-        }, 3000);
-        return;
+        setupIssues.push('Connect your Facebook account to enable automatic posting.');
       }
-
-      // Check if user has active subscription
       if (!hasActiveSubscription) {
-        setError('Please purchase a subscription to enable automatic posting.');
-        setTimeout(() => {
-          navigate('/subscription');
-        }, 3000);
-        return;
+        setupIssues.push('Purchase a subscription to enable automatic posting.');
+      }
+      if (setupIssues.length > 0) {
+        setSetupMessage(setupIssues.join(' '));
       }
 
-      // Fetch data
       await fetchData();
     } catch (error) {
       console.error('Setup check failed:', error);
@@ -73,22 +71,60 @@ export const HomePage = () => {
 
   const fetchData = async () => {
     try {
-      const festivalsData = await festivalService.getAllFestivals();
+      const [festivalsData, postedPostsData] = await Promise.all([
+        festivalService.getAllFestivals(),
+        scheduledService.getPostedPosts(),
+      ]);
+
       setFestivals(festivalsData.festivals || []);
+      setPostedPosts(postedPostsData.posts || []);
     } catch (error) {
       console.error('Failed to fetch data:', error);
       throw error;
     }
   };
 
-  const upcomingFestivals = festivals.filter(festival => {
+  const handleDownloadPostedImage = async (post: PostedPost) => {
+    if (!post.imageUrl) return;
+
+    setDownloadingPostId(post._id);
+
+    try {
+      const response = await fetch(post.imageUrl);
+      if (!response.ok) {
+        throw new Error('Failed to download image');
+      }
+
+      const blob = await response.blob();
+      const objectUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const safeFestivalName = (post.festival?.name || 'posted-image')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '');
+
+      link.href = objectUrl;
+      link.download = `${safeFestivalName || 'posted-image'}-${post._id}.png`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(objectUrl);
+    } catch (downloadError) {
+      console.error('Failed to download posted image:', downloadError);
+      window.open(post.imageUrl, '_blank', 'noopener,noreferrer');
+    } finally {
+      setDownloadingPostId(null);
+    }
+  };
+
+  const upcomingFestivals = festivals.filter((festival: Festival) => {
     if (!festival?.date) return false;
     const festivalDate = new Date(festival.date);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     festivalDate.setHours(0, 0, 0, 0);
     return festivalDate >= today;
-  }).sort((a, b) => {
+  }).sort((a: Festival, b: Festival) => {
     if (!a?.date || !b?.date) return 0;
     return new Date(a.date).getTime() - new Date(b.date).getTime();
   });
@@ -111,15 +147,19 @@ export const HomePage = () => {
           <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
           <div className="flex-1">
             <p className="text-sm font-medium text-red-800">
-              {error.includes('connect') || error.includes('subscription') ? 'Setup Required' : 'Error'}
+              Error
             </p>
             <p className="text-sm text-red-700 mt-1">{error}</p>
-            {!user?.facebookId && error.includes('connect') && (
-              <p className="text-xs text-red-600 mt-2">Redirecting to profile page...</p>
-            )}
-            {user?.facebookId && !subscription?.active && error.includes('subscription') && (
-              <p className="text-xs text-red-600 mt-2">Redirecting to subscription page...</p>
-            )}
+          </div>
+        </div>
+      )}
+
+      {setupMessage && (
+        <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-4 flex items-start gap-3 animate-in fade-in slide-in-from-top">
+          <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-amber-900">Setup Required</p>
+            <p className="mt-1 text-sm text-amber-800">{setupMessage}</p>
           </div>
         </div>
       )}
@@ -136,6 +176,94 @@ export const HomePage = () => {
       </div>
 
       <div className="grid gap-6">
+        <section className="rounded-3xl border border-white/40 bg-white/90 p-6 shadow-elegant backdrop-blur-sm">
+          <div className="mb-6 flex items-center gap-3 border-b border-gray-100 pb-4">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#003049] to-[#669bbc] text-white shadow-md">
+              <CheckCircle2 className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="m-0 text-xl font-bold text-[#003049]">Posted Posts</h3>
+              <p className="m-0 text-xs text-gray-500">{postedPosts.length} posted for this account</p>
+            </div>
+          </div>
+
+          <div className="space-y-4 max-h-[32rem] overflow-y-auto pr-1">
+            {postedPosts.length === 0 ? (
+              <div className="py-10 text-center text-gray-500">
+                <CheckCircle2 className="mx-auto mb-2 h-12 w-12 text-gray-300" />
+                <p className="text-sm">No posted images yet</p>
+              </div>
+            ) : (
+              postedPosts.map((post) => {
+                const postedDate = post.postedAt || post.scheduledAt || post.createdAt;
+                const postedPlatforms = [
+                  post.platforms?.facebook?.status === 'posted' ? 'Facebook' : null,
+                  post.platforms?.instagram?.status === 'posted' ? 'Instagram' : null,
+                ].filter(Boolean).join(' • ');
+
+                return (
+                  <article
+                    key={post._id}
+                    className="grid gap-4 rounded-2xl border border-gray-200 bg-gradient-to-r from-white to-gray-50 p-4 md:grid-cols-[160px_1fr_auto] md:items-center"
+                  >
+                    <div className="overflow-hidden rounded-xl border border-gray-100 bg-gray-100 shadow-sm">
+                      <img
+                        src={post.imageUrl}
+                        alt={post.festival?.name || 'Posted festival'}
+                        className="h-40 w-full object-cover md:h-28"
+                      />
+                    </div>
+
+                    <div className="min-w-0 space-y-2">
+                      <h4 className="truncate text-lg font-semibold text-[#003049]">
+                        {post.festival?.name || 'Posted festival image'}
+                      </h4>
+                      <p className="text-sm text-[#669bbc]">
+                        Posted on{' '}
+                        {new Date(postedDate).toLocaleDateString('en-US', {
+                          weekday: 'short',
+                          month: 'long',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })}
+                      </p>
+                      {post.festival?.date && (
+                        <p className="text-xs text-gray-500">
+                          Festival date:{' '}
+                          {new Date(post.festival.date).toLocaleDateString('en-US', {
+                            month: 'long',
+                            day: 'numeric',
+                            year: 'numeric',
+                          })}
+                        </p>
+                      )}
+                      {postedPlatforms && (
+                        <p className="text-xs font-medium text-green-700">Published on {postedPlatforms}</p>
+                      )}
+                    </div>
+
+                    <div className="flex md:justify-end">
+                      <button
+                        type="button"
+                        onClick={() => handleDownloadPostedImage(post)}
+                        disabled={downloadingPostId === post._id}
+                        className="inline-flex items-center gap-2 rounded-xl bg-[#003049] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#00243a] disabled:cursor-not-allowed disabled:opacity-70"
+                      >
+                        {downloadingPostId === post._id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Download className="h-4 w-4" />
+                        )}
+                        Download Image
+                      </button>
+                    </div>
+                  </article>
+                );
+              })
+            )}
+          </div>
+        </section>
+
         {/* Next Festival - Prominent Section */}
         {upcomingFestivals.length > 0 && upcomingFestivals[0] && (
           <section className="rounded-3xl border-2 border-[#669bbc] bg-gradient-to-br from-white via-[#fffaf0] to-[#fdf0d5] p-8 shadow-2xl animate-in fade-in slide-in-from-top duration-700">
