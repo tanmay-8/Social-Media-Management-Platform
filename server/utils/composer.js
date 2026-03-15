@@ -39,11 +39,13 @@ async function composeAndUpload(baseUrl, footerUrl, options = {}) {
             .toBuffer();
 
         // Step 2: Match footer width to final image width without cropping.
-        // Height scales automatically to preserve the uploaded footer aspect ratio.
+        // Height is capped at 20% of the final canvas height.
+        const maxFooterHeight = Math.floor(finalHeight * 0.20);
         const processedFooter = await sharp(footerBuffer)
             .resize({
                 width: finalWidth,
-                fit: 'contain'
+                height: maxFooterHeight,
+                fit: 'inside'   // scale down to fit within width×maxFooterHeight, never upscale beyond width
             })
             .png()
             .toBuffer();
