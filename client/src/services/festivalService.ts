@@ -74,14 +74,5 @@ export const festivalService = {
     formData.append('file', file);
 
     return api.postFormData(API_CONFIG.ENDPOINTS.ADMIN_IMPORT_FESTIVALS, formData);
-  },
-
-  async postNow(festivalId: string): Promise<{ 
-    message: string; 
-    festivalName: string; 
-    postId: string;
-    imageUrl: string;
-  }> {
-    return api.post(API_CONFIG.ENDPOINTS.COMPOSE_POST_NOW, { festivalId });
-  },
+  }
 };

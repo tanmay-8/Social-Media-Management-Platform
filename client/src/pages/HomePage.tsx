@@ -1,5 +1,5 @@
 import { useAppStore } from '../store';
-import { Calendar, Loader2, Clock, AlertCircle, Send } from 'lucide-react';
+import { Calendar, Loader2, Clock, AlertCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { festivalService } from '../services/festivalService';
@@ -13,8 +13,6 @@ export const HomePage = () => {
   const [festivals, setFestivals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [postingId, setPostingId] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
     checkUserSetup();
@@ -83,29 +81,6 @@ export const HomePage = () => {
     }
   };
 
-  const handlePostNow = async (festivalId: string, festivalName: string) => {
-    if (!window.confirm(`Post "${festivalName}" to Facebook now?`)) {
-      return;
-    }
-
-    setPostingId(festivalId);
-    setError(null);
-    setSuccessMessage(null);
-
-    try {
-      const result = await festivalService.postNow(festivalId);
-      setSuccessMessage(`✓ Posted "${result.festivalName}" successfully to Facebook!`);
-      setTimeout(() => setSuccessMessage(null), 5000);
-    } catch (error) {
-      console.error('Post now failed:', error);
-      const message = error instanceof Error ? error.message : 'Failed to post';
-      setError(message);
-      setTimeout(() => setError(null), 5000);
-    } finally {
-      setPostingId(null);
-    }
-  };
-
   const upcomingFestivals = festivals.filter(festival => {
     if (!festival?.date) return false;
     const festivalDate = new Date(festival.date);
@@ -131,19 +106,6 @@ export const HomePage = () => {
 
   return (
     <div className="flex min-h-[calc(100vh-120px)] flex-col">
-      {successMessage && (
-        <div className="mb-4 rounded-lg bg-green-50 border border-green-200 p-4 flex items-start gap-3 animate-in fade-in slide-in-from-top">
-          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-green-500 flex-shrink-0 mt-0.5">
-            <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-          <div className="flex-1">
-            <p className="text-sm font-medium text-green-800">{successMessage}</p>
-          </div>
-        </div>
-      )}
-
       {error && (
         <div className="mb-4 rounded-lg bg-red-50 border border-red-200 p-4 flex items-start gap-3 animate-in fade-in slide-in-from-top">
           <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
@@ -248,33 +210,6 @@ export const HomePage = () => {
                   </div>
                 </div>
 
-                {/* Post Now Button */}
-                <div className="mt-6">
-                  <button
-                    onClick={() => handlePostNow(upcomingFestivals[0]._id, upcomingFestivals[0].name)}
-                    disabled={postingId === upcomingFestivals[0]._id || !user?.facebookId || !subscription?.active}
-                    className="group relative inline-flex items-center justify-center gap-2.5 rounded-xl bg-gradient-to-r from-[#669bbc] via-[#003049] to-[#780000] px-8 py-4 text-base font-bold text-white shadow-2xl transition-all duration-300 hover:scale-105 hover:shadow-[0_20px_60px_rgba(0,48,73,0.4)] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 overflow-hidden"
-                    title={!user?.facebookId ? 'Connect Facebook first' : !subscription?.active ? 'Subscription required' : `Post ${upcomingFestivals[0].name} now`}
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
-                    {postingId === upcomingFestivals[0]._id ? (
-                      <>
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                        <span>Posting to Social Media...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Send className="h-5 w-5 transition-transform group-hover:translate-x-1" />
-                        <span>Post Now to Facebook</span>
-                      </>
-                    )}
-                  </button>
-                  {(!user?.facebookId || !subscription?.active) && (
-                    <p className="mt-2 text-xs text-red-600">
-                      {!user?.facebookId ? 'Please connect Facebook from your profile' : 'Active subscription required'}
-                    </p>
-                  )}
-                </div>
               </div>
             </div>
           </section>
@@ -300,7 +235,6 @@ export const HomePage = () => {
               </div>
             ) : (
               upcomingFestivals.map((festival) => {
-                const isPosting = postingId === festival?._id;
                 const daysUntil = festival?.date ? Math.max(0, Math.ceil((new Date(festival.date).getTime() - Date.now()) / (1000 * 60 * 60 * 24))) : 0;
                 const isToday = daysUntil === 0;
                 
@@ -333,24 +267,6 @@ export const HomePage = () => {
                         {isToday ? 'Today' : `${daysUntil} days`}
                       </span>
                     )}
-                    <button
-                      onClick={() => handlePostNow(festival?._id, festival?.name)}
-                      disabled={isPosting || !user?.facebookId || !subscription?.active}
-                      className="group flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-[#669bbc] to-[#003049] px-3 py-2 text-xs font-medium text-white transition-all hover:shadow-lg hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-                      title={!user?.facebookId ? 'Connect Facebook first' : !subscription?.active ? 'Subscription required' : 'Post now to Facebook'}
-                    >
-                      {isPosting ? (
-                        <>
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          <span>Posting...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Send className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-                          <span>Post Now</span>
-                        </>
-                      )}
-                    </button>
                   </div>
                 );
               })
