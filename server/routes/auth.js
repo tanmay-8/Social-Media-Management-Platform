@@ -145,21 +145,17 @@ router.get('/me', auth, async (req, res) => {
 router.get('/facebook', auth.optional, (req, res) => {
     const redirectUri = `${process.env.SERVER_URL}/api/auth/facebook/callback`;
     
-    console.log('🔵 Initiating Facebook & Instagram OAuth...');
+    console.log('🔵 Initiating Facebook OAuth...');
     console.log('Redirect URI:', redirectUri);
     console.log('Facebook App ID:', process.env.FACEBOOK_APP_ID);
     
-    // Use explicit scopes for Facebook Pages, Instagram, and user profile
-    // IMPORTANT: instagram_manage_comments is required to read instagram_business_account field
+    // Request only Facebook permissions for the current flow.
     const scopes = [
         'email',
         'public_profile',
         'pages_show_list',
         'pages_read_engagement',
         'pages_manage_posts',
-        'instagram_basic',
-        'instagram_content_publish',
-        'instagram_manage_comments',
         'pages_read_user_content'
     ].join(',');
     
@@ -241,54 +237,6 @@ router.get('/facebook/callback', async (req, res) => {
         const { id: facebookId, name, email, picture } = profileResponse.data;
         console.log('✅ User profile received:', { facebookId, name, email });
 
-        // Try to get Instagram Business Account linked to user's Facebook Pages
-        console.log('📸 Checking for Instagram Business Account...');
-        let instagramBusinessId = null;
-        let instagramHandle = null;
-        try {
-            // Use string interpolation to avoid axios URL encoding issues with nested fields
-            const fieldsParam = 'id,name,access_token,instagram_business_account{id,username,profile_picture_url}';
-            const apiUrl = `https://graph.facebook.com/v21.0/me/accounts?fields=${encodeURIComponent(fieldsParam)}&access_token=${encodeURIComponent(access_token)}`;
-            
-            console.log('🔍 Making API call to fetch pages with Instagram data...');
-            console.log('🔍 Fields parameter:', fieldsParam);
-            
-            const pagesResponse = await axios.get(apiUrl);
-            
-            const pages = pagesResponse.data.data || [];
-            console.log(`📋 Found ${pages.length} Facebook pages`);
-            console.log('📋 Raw pages data:', JSON.stringify(pages, null, 2));
-            
-            // Check each page for Instagram connection
-            pages.forEach((page, index) => {
-                console.log(`\n📄 Page ${index + 1}: ${page.name} (ID: ${page.id})`);
-                if (page.instagram_business_account) {
-                    console.log(`  ✅ HAS Instagram: @${page.instagram_business_account.username} (ID: ${page.instagram_business_account.id})`);
-                } else {
-                    console.log(`  ❌ NO Instagram Business Account linked`);
-                }
-            });
-            
-            const pageWithInstagram = pages.find(page => page.instagram_business_account);
-            
-            if (pageWithInstagram) {
-                instagramBusinessId = pageWithInstagram.instagram_business_account.id;
-                instagramHandle = pageWithInstagram.instagram_business_account.username;
-                console.log('\n✅ Instagram Business Account found:', { instagramBusinessId, instagramHandle, pageId: pageWithInstagram.id, pageName: pageWithInstagram.name });
-            } else {
-                console.log('\n⚠️ No Instagram Business Account linked to any Facebook Pages');
-                if (pages.length > 0) {
-                    console.log('   💡 Tip: Connect an Instagram Business Account to one of your Facebook Pages');
-                    console.log('   💡 The Instagram account MUST be a Business Account (not Personal or Creator)');
-                }
-            }
-        } catch (igError) {
-            console.error('❌ Error fetching Instagram Business Account:', igError.response?.data || igError.message);
-            if (igError.response?.data) {
-                console.error('❌ Facebook API Error Details:', JSON.stringify(igError.response.data, null, 2));
-            }
-        }
-
         let user;
 
         // If this is a connection request from a logged-in user, update that user
@@ -308,7 +256,7 @@ router.get('/facebook/callback', async (req, res) => {
                     return res.redirect(`${clientUrl}/profile?error=facebook_already_connected`);
                 }
                 
-                // Update the logged-in user with Facebook and Instagram info
+                // Update the logged-in user with Facebook info
                 user.facebookId = facebookId;
                 user.profile = user.profile || {};
                 user.profile.facebookAccessToken = access_token;
@@ -321,14 +269,8 @@ router.get('/facebook/callback', async (req, res) => {
                     };
                 }
                 
-                // Store Instagram data if available
-                if (instagramBusinessId) {
-                    user.profile.instagramBusinessId = instagramBusinessId;
-                    user.profile.instagramHandle = instagramHandle;
-                    user.profile.instagramAccessToken = access_token;
-                }
                 await user.save();
-                console.log('✅ Updated existing user with Facebook & Instagram connection');
+                console.log('✅ Updated existing user with Facebook connection');
                 
                 // Redirect back to profile page
                 const token = generateToken(user._id, user.role);
@@ -347,17 +289,12 @@ router.get('/facebook/callback', async (req, res) => {
                 user.facebookId = facebookId;
                 user.authProvider = 'facebook';
             }
-            // Store/update the Facebook access token and Instagram data
+            // Store/update the Facebook access token
             user.profile = user.profile || {};
             user.profile.facebookAccessToken = access_token;
-            if (instagramBusinessId) {
-                user.profile.instagramBusinessId = instagramBusinessId;
-                user.profile.instagramHandle = instagramHandle;
-                user.profile.instagramAccessToken = access_token;
-            }
             await user.save();
         } else {
-            // Create new user with Facebook and Instagram access tokens
+            // Create new user with Facebook access token
             user = new User({
                 name,
                 email: email || `${facebookId}@facebook.com`, // Fallback email
@@ -365,9 +302,6 @@ router.get('/facebook/callback', async (req, res) => {
                 authProvider: 'facebook',
                 profile: {
                     facebookAccessToken: access_token,
-                    instagramBusinessId: instagramBusinessId,
-                    instagramHandle: instagramHandle,
-                    instagramAccessToken: instagramBusinessId ? access_token : undefined,
                     profileImage: picture?.data?.url ? {
                         url: picture.data.url,
                         source: 'facebook'
@@ -441,7 +375,7 @@ router.post('/facebook/connect', auth, async (req, res) => {
 });
 
 // @route   POST /api/auth/facebook/disconnect
-// @desc    Disconnect Facebook and Instagram accounts from user
+// @desc    Disconnect Facebook account from user
 // @access  Private
 router.post('/facebook/disconnect', auth, async (req, res) => {
     try {
@@ -456,18 +390,18 @@ router.post('/facebook/disconnect', auth, async (req, res) => {
             });
         }
 
-        // Disconnect both Facebook and Instagram
+        // Disconnect Facebook-related data. Instagram fields remain in schema for future use.
         req.user.facebookId = undefined;
         if (req.user.profile) {
             req.user.profile.facebookAccessToken = undefined;
-            req.user.profile.instagramBusinessId = undefined;
-            req.user.profile.instagramHandle = undefined;
-            req.user.profile.instagramAccessToken = undefined;
+            req.user.profile.facebookPageId = undefined;
+            req.user.profile.facebookPageName = undefined;
+            req.user.profile.facebookPageAccessToken = undefined;
         }
         await req.user.save();
 
         res.json({
-            message: 'Facebook and Instagram accounts disconnected successfully',
+            message: 'Facebook account disconnected successfully',
             user: {
                 id: req.user._id,
                 name: req.user.name,
@@ -479,37 +413,6 @@ router.post('/facebook/disconnect', auth, async (req, res) => {
     } catch (error) {
         console.error('Facebook disconnect error:', error);
         res.status(500).json({ message: 'Failed to disconnect Facebook account' });
-    }
-});
-
-// Keep Instagram disconnect for backward compatibility
-// @route   POST /api/auth/instagram/disconnect
-// @desc    Disconnect Instagram account from user
-// @access  Private
-router.post('/instagram/disconnect', auth, async (req, res) => {
-    try {
-        if (!req.user.profile?.instagramAccessToken) {
-            return res.status(400).json({ message: 'No Instagram account connected' });
-        }
-
-        req.user.profile.instagramAccessToken = undefined;
-        req.user.profile.instagramHandle = undefined;
-        req.user.profile.instagramBusinessId = undefined;
-        await req.user.save();
-
-        res.json({
-            message: 'Instagram account disconnected successfully',
-            user: {
-                id: req.user._id,
-                name: req.user.name,
-                email: req.user.email,
-                role: req.user.role,
-                profile: req.user.profile
-            }
-        });
-    } catch (error) {
-        console.error('❌ Instagram disconnect error:', error);
-        res.status(500).json({ message: 'Failed to disconnect Instagram account' });
     }
 });
 

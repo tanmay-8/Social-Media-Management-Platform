@@ -28,9 +28,6 @@ export const ProfilePage = () => {
   const [facebookLoading, setFacebookLoading] = useState(false);
   const [facebookError, setFacebookError] = useState<string | null>(null);
   const [facebookSuccess, setFacebookSuccess] = useState<string | null>(null);
-  const [instagramLoading, setInstagramLoading] = useState(false);
-  const [instagramError, setInstagramError] = useState<string | null>(null);
-  const [instagramSuccess, setInstagramSuccess] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
   const [pages, setPages] = useState<any[]>([]);
@@ -43,30 +40,10 @@ export const ProfilePage = () => {
     setLoadingPages(true);
     setFacebookError(null);
     try {
-      console.log('📱 [Client] Fetching Facebook pages...');
       const result = await socialService.getPages();
-      console.log('📱 [Client] Received response:', result);
-      console.log('📱 [Client] Pages data:', JSON.stringify(result.pages, null, 2));
-      
       setPages(result.pages || []);
-      
-      if (result.pages && result.pages.length > 0) {
-        console.log('✅ [Client] Fetched', result.pages.length, 'Facebook pages');
-        
-        // Log Instagram status for each page
-        result.pages.forEach((page: any) => {
-          if (page.instagram_business_account) {
-            console.log(`  📸 [Client] "${page.name}" has Instagram: @${page.instagram_business_account.username}`);
-          } else {
-            console.log(`  📘 [Client] "${page.name}" - no Instagram`);
-          }
-        });
-      } else {
-        console.warn('⚠️ [Client] No pages returned');
-      }
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Failed to fetch pages';
-      console.error('❌ [Client] Failed to fetch pages:', error);
       setFacebookError(errorMsg);
       setPages([]);
     } finally {
@@ -85,8 +62,7 @@ export const ProfilePage = () => {
           email: result.user.email,
           role: result.user.role,
           facebookId: result.user.facebookId,
-          photoUrl: result.user.profile?.footerImage?.url,
-          instagramHandle: result.user.profile?.instagramHandle
+          photoUrl: result.user.profile?.footerImage?.url
         });
         
         // If user has Facebook connected, fetch their pages
@@ -102,7 +78,6 @@ export const ProfilePage = () => {
     
     // Check for Facebook connection success/error in URL
     const fbConnected = searchParams.get('facebook_connected');
-    const igConnected = searchParams.get('instagram_connected');
     const error = searchParams.get('error');
     
     if (fbConnected === 'true') {
@@ -113,14 +88,6 @@ export const ProfilePage = () => {
       setSearchParams(searchParams);
     }
 
-    if (igConnected === 'true') {
-      setInstagramSuccess('Instagram account connected successfully!');
-      setTimeout(() => setInstagramSuccess(null), 5000);
-      // Remove the query parameter
-      searchParams.delete('instagram_connected');
-      setSearchParams(searchParams);
-    }
-    
     if (error === 'facebook_already_connected') {
       setFacebookError('This Facebook account is already connected to another user');
       setTimeout(() => setFacebookError(null), 5000);
@@ -129,13 +96,6 @@ export const ProfilePage = () => {
       setSearchParams(searchParams);
     }
 
-    if (error === 'instagram_already_connected') {
-      setInstagramError('This Instagram account is already connected to another user');
-      setTimeout(() => setInstagramError(null), 5000);
-      // Remove the query parameter
-      searchParams.delete('error');
-      setSearchParams(searchParams);
-    }
   }, [login, searchParams, setSearchParams]);
 
   const {
@@ -306,21 +266,12 @@ export const ProfilePage = () => {
     setFacebookSuccess(null);
 
     try {
-      console.log('🔵 Connecting page:', selectedPage);
-      
       const result = await socialService.connectFacebook({
         pageId: selectedPage,
         pageAccessToken: '' // No longer needed - server will get it
       });
 
-      console.log('✅ Page connected successfully:', result);
-      
-      // Show success message - check if Instagram was also connected
-      if (result.user?.instagramConnected && result.user?.instagramHandle) {
-        setFacebookSuccess(`Facebook Page connected! Instagram (@${result.user.instagramHandle}) also connected.`);
-      } else {
-        setFacebookSuccess('Facebook Page connected successfully!');
-      }
+      setFacebookSuccess('Facebook Page connected successfully!');
       
       setSelectedPage(''); // Reset selection
       
@@ -333,8 +284,7 @@ export const ProfilePage = () => {
         role: userResult.user.role,
         facebookId: userResult.user.facebookId,
         facebookPageName: userResult.user.profile?.facebookPageName,
-        photoUrl: userResult.user.profile?.footerImage?.url,
-        instagramHandle: userResult.user.profile?.instagramHandle
+        photoUrl: userResult.user.profile?.footerImage?.url
       });
 
       setTimeout(() => setFacebookSuccess(null), 5000);
@@ -354,14 +304,14 @@ export const ProfilePage = () => {
     setFacebookSuccess(null);
 
     try {
-      const result = await authService.disconnectFacebook();
-      setFacebookSuccess('Facebook and Instagram accounts disconnected successfully');
+      await authService.disconnectFacebook();
+      setFacebookSuccess('Facebook account disconnected successfully');
       
       // Update user in store
       updateProfile({
         ...user,
         facebookId: undefined,
-        instagramHandle: undefined
+        facebookPageName: undefined
       });
 
       setTimeout(() => setFacebookSuccess(null), 3000);
@@ -371,36 +321,6 @@ export const ProfilePage = () => {
       setTimeout(() => setFacebookError(null), 5000);
     } finally {
       setFacebookLoading(false);
-    }
-  };
-
-  const handleConnectInstagram = () => {
-    // Redirect to Instagram OAuth for account linking
-    authService.loginWithInstagram();
-  };
-
-  const handleDisconnectInstagram = async () => {
-    setInstagramLoading(true);
-    setInstagramError(null);
-    setInstagramSuccess(null);
-
-    try {
-      const result = await authService.disconnectInstagram();
-      setInstagramSuccess('Instagram account disconnected successfully');
-      
-      // Update user in store
-      updateProfile({
-        ...user,
-        instagramHandle: undefined
-      });
-
-      setTimeout(() => setInstagramSuccess(null), 3000);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to disconnect Instagram';
-      setInstagramError(message);
-      setTimeout(() => setInstagramError(null), 5000);
-    } finally {
-      setInstagramLoading(false);
     }
   };
 
@@ -561,9 +481,9 @@ export const ProfilePage = () => {
             </div>
 
             <div className="flex flex-col gap-1.5 rounded-xl border-2 border-[rgba(0,48,73,0.15)] bg-white p-4">
-              <label className="text-[0.9rem] font-medium text-[#003049]">Facebook & Instagram</label>
+              <label className="text-[0.9rem] font-medium text-[#003049]">Facebook</label>
               <p className="text-[0.8rem] text-[#7f7270] mb-2">
-                Connect your Facebook account to manage both Facebook and Instagram posts. If you have an Instagram Business Account linked to your Facebook Page, it will be automatically connected.
+                Connect your Facebook account and select the page where festival posts should be published.
               </p>
               
               {facebookError && (
@@ -600,7 +520,7 @@ export const ProfilePage = () => {
                             Disconnecting...
                           </>
                         ) : (
-                          'Disconnect Both'
+                          'Disconnect'
                         )}
                       </button>
                     </div>
@@ -608,17 +528,6 @@ export const ProfilePage = () => {
                       <div className="flex items-center gap-2 pl-7">
                         <CheckCircle className="h-4 w-4 text-green-600" />
                         <span className="text-[0.8rem] text-[#003049]">Page connected: <strong>{user.facebookPageName}</strong></span>
-                      </div>
-                    )}
-                    {user?.instagramHandle ? (
-                      <div className="flex items-center gap-2 pl-7">
-                        <CheckCircle className="h-4 w-4 text-green-600" />
-                        <span className="text-[0.8rem] text-[#003049]">Instagram connected: @{user.instagramHandle}</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2 pl-7">
-                        <XCircle className="h-4 w-4 text-amber-600" />
-                        <span className="text-[0.8rem] text-[#7f7270]">No Instagram Business Account linked to your Facebook Page</span>
                       </div>
                     )}
                   </div>
@@ -660,7 +569,7 @@ export const ProfilePage = () => {
                             <option value="">Select a page</option>
                             {pages.map((page) => (
                               <option key={page.id} value={page.id}>
-                                {page.name} {page.instagram_business_account ? `📸 @${page.instagram_business_account.username}` : '(no Instagram)'}
+                                {page.name}
                               </option>
                             ))}
                           </select>
@@ -673,23 +582,6 @@ export const ProfilePage = () => {
                             Connect Page
                           </button>
                         </div>
-                        {selectedPage && pages.find(p => p.id === selectedPage)?.instagram_business_account && (
-                          <div className="flex items-center gap-2 rounded-lg bg-blue-50 p-2 text-xs text-blue-700 border border-blue-200">
-                            <CheckCircle className="h-3 w-3" />
-                            <span>This page has Instagram Business Account: <strong>@{pages.find(p => p.id === selectedPage)?.instagram_business_account?.username}</strong></span>
-                          </div>
-                        )}
-                        {pages.every(p => !p.instagram_business_account) && (
-                          <div className="rounded-lg bg-amber-50 p-3 text-xs text-amber-800 border border-amber-200">
-                            <p className="font-semibold mb-1">No Instagram Business Accounts found</p>
-                            <p className="mb-2">To connect Instagram, you need to:</p>
-                            <ol className="list-decimal ml-4 space-y-1">
-                              <li>Convert your Instagram account to a Business Account</li>
-                              <li>Link it to your Facebook Page in Facebook Page Settings</li>
-                              <li>Disconnect and reconnect Facebook here to refresh permissions</li>
-                            </ol>
-                          </div>
-                        )}
                       </div>
                     ) : (
                       <div className="space-y-3">
@@ -727,11 +619,8 @@ export const ProfilePage = () => {
                     <svg className="h-4 w-4" viewBox="0 0 24 24" fill="#1877F2">
                       <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
                     </svg>
-                    Connect Facebook & Instagram
+                    Connect Facebook
                   </button>
-                  <p className="text-[0.75rem] text-[#7f7270] italic">
-                    Note: Instagram will be automatically connected if you have a Business Account linked to your Facebook Page
-                  </p>
                 </div>
               )}
             </div>

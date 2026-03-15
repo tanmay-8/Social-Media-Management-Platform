@@ -17,6 +17,10 @@ export interface User {
     facebookPageId?: string;
     facebookPageName?: string;
     instagramBusinessId?: string;
+    profileImage?: {
+      url: string;
+      source?: string;
+    };
     footerImage?: {
       url: string;
       public_id: string;

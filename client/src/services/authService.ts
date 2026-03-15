@@ -55,19 +55,6 @@ export const authService = {
     }
   },
 
-  // Instagram OAuth - initiate login or connect
-  loginWithInstagram(): void {
-    const serverUrl = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000';
-    const token = storage.getToken();
-    
-    // Pass token as query parameter if user is authenticated (connecting account)
-    if (token) {
-      window.location.href = `${serverUrl}/api/auth/instagram?token=${encodeURIComponent(token)}`;
-    } else {
-      window.location.href = `${serverUrl}/api/auth/instagram`;
-    }
-  },
-
   // Handle OAuth callback
   async handleOAuthCallback(token: string): Promise<{ user: User }> {
     storage.setToken(token);
@@ -82,10 +69,5 @@ export const authService = {
   // Disconnect Facebook account
   async disconnectFacebook(): Promise<{ user: User }> {
     return api.post('/api/auth/facebook/disconnect');
-  },
-
-  // Disconnect Instagram account
-  async disconnectInstagram(): Promise<{ user: User }> {
-    return api.post('/api/auth/instagram/disconnect');
   },
 };
