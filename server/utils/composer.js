@@ -5,8 +5,8 @@ const { uploadStream } = require('./cloudinary');
 
 /**
  * Compose a professional poster-style image optimized for Instagram
- * Festival image takes up most of the space (80%)
- * Footer section (20%) uses bottom-anchored crop to preserve key footer content
+ * Festival image fills the full canvas
+ * Footer section (23%) overlays at the bottom using bottom-anchored crop
  * If footer aspect ratio does not match target slot, crop from bottom to fit
  * Final output: 1080x1350 (4:5 aspect ratio - Instagram portrait optimal)
  * 
@@ -20,9 +20,9 @@ async function composeAndUpload(baseUrl, footerUrl, options = {}) {
     const finalWidth = options.width || 1080;
     const finalHeight = options.height || 1350; // Changed from 1080 to 1350 for Instagram 4:5 ratio
     
-    // Calculate heights: 80% festival image, 20% footer section
-    const festivalHeight = Math.floor(finalHeight * 0.80);
-    const footerHeight = finalHeight - festivalHeight;
+    // Festival fills the full image. Footer overlays the bottom 23%.
+    const footerHeight = Math.floor(finalHeight * 0.23);
+    const footerTop = finalHeight - footerHeight;
     const seamBlendHeight = Math.max(12, Math.floor(finalHeight * 0.012));
 
     try {
@@ -35,9 +35,9 @@ async function composeAndUpload(baseUrl, footerUrl, options = {}) {
         const baseBuffer = Buffer.from(baseResp.data);
         const footerBuffer = Buffer.from(footerResp.data);
 
-        // Step 1: Resize festival image to top 80% area
+        // Step 1: Resize festival image to full final canvas.
         const festivalImage = await sharp(baseBuffer)
-            .resize(finalWidth, festivalHeight, { 
+            .resize(finalWidth, finalHeight, { 
                 fit: 'cover',
                 position: 'center'
             })
@@ -52,15 +52,11 @@ async function composeAndUpload(baseUrl, footerUrl, options = {}) {
             })
             .toBuffer();
 
-        // Step 3: Combine festival image with footer
+        // Step 3: Overlay footer on top of festival image at the bottom.
         let finalComposition = await sharp(festivalImage)
-            .extend({
-                bottom: footerHeight,
-                background: { r: 255, g: 255, b: 255, alpha: 1 }
-            })
             .composite([{
                 input: processedFooter,
-                top: festivalHeight,
+                top: footerTop,
                 left: 0
             }])
             .png()
@@ -82,7 +78,7 @@ async function composeAndUpload(baseUrl, footerUrl, options = {}) {
         finalComposition = await sharp(finalComposition)
             .composite([{
                 input: seamOverlaySvg,
-                top: Math.max(0, festivalHeight - Math.floor(seamBlendHeight / 2)),
+                top: Math.max(0, footerTop - Math.floor(seamBlendHeight / 2)),
                 left: 0
             }])
             .png()
