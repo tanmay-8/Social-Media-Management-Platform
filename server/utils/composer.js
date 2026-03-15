@@ -6,7 +6,7 @@ const { uploadStream } = require('./cloudinary');
 /**
  * Compose a professional poster-style image optimized for Instagram
  * Festival image fills the full canvas
- * Footer is placed at the bottom as uploaded, without cropping or resizing
+ * Footer width is matched to the festival image width without cropping
  * Final output: 1080x1350 (4:5 aspect ratio - Instagram portrait optimal)
  * 
  * @param {string} baseUrl - Festival image URL
@@ -38,8 +38,13 @@ async function composeAndUpload(baseUrl, footerUrl, options = {}) {
             })
             .toBuffer();
 
-        // Step 2: Keep footer as uploaded. No crop or resize constraints are applied.
+        // Step 2: Match footer width to final image width without cropping.
+        // Height scales automatically to preserve the uploaded footer aspect ratio.
         const processedFooter = await sharp(footerBuffer)
+            .resize({
+                width: finalWidth,
+                fit: 'contain'
+            })
             .png()
             .toBuffer();
 
