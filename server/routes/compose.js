@@ -1,7 +1,4 @@
 const express = require('express');
-const axios = require('axios');
-const sharp = require('sharp');
-const { uploadStream } = require('../utils/cloudinary');
 const auth = require('../middleware/auth');
 const User = require('../models/User');
 const Festival = require('../models/Festival');
@@ -45,29 +42,10 @@ router.post('/test', auth, async (req, res) => {
         if (!user.profile?.footerImage?.url) return res.status(400).json({ message: 'User has no footer image' });
         if (!festival.baseImage?.url) return res.status(400).json({ message: 'Festival has no base image' });
 
-        // fetch images as buffers
-        const [baseResp, footerResp] = await Promise.all([
-            axios.get(festival.baseImage.url, { responseType: 'arraybuffer' }),
-            axios.get(user.profile.footerImage.url, { responseType: 'arraybuffer' })
-        ]);
-
-        const baseBuffer = Buffer.from(baseResp.data);
-        const footerBuffer = Buffer.from(footerResp.data);
-
-        // Normalize base to 1080x1080 and footer width to base width
-        const baseSharp = sharp(baseBuffer).resize(1080, 1080, { fit: 'cover' }).png();
-        const footerResized = await sharp(footerBuffer).resize({ width: 1080 }).png().toBuffer();
-
-        const composedBuffer = await baseSharp
-            .composite([{ input: footerResized, gravity: 'south' }])
-            .toBuffer();
-
-        // upload composed image to cloudinary via stream
-        const stream = require('stream');
-        const readStream = new stream.PassThrough();
-        readStream.end(composedBuffer);
-
-        const result = await uploadStream(readStream, { folder: 'composed' });
+        const result = await composeAndUpload(
+            festival.baseImage.url,
+            user.profile.footerImage.url
+        );
 
         res.json({ message: 'Composed uploaded', url: result.secure_url, public_id: result.public_id });
     } catch (err) {

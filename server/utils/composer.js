@@ -6,8 +6,8 @@ const { uploadStream } = require('./cloudinary');
 /**
  * Compose a professional poster-style image optimized for Instagram
  * Festival image takes up most of the space (80%)
- * Footer section (20%) contains the footer image stretched horizontally
- * If footer image is not horizontal, it will be converted/adapted to fit
+ * Footer section (20%) uses bottom-anchored crop to preserve key footer content
+ * If footer aspect ratio does not match target slot, crop from bottom to fit
  * Final output: 1080x1350 (4:5 aspect ratio - Instagram portrait optimal)
  * 
  * @param {string} baseUrl - Festival image URL
@@ -21,8 +21,9 @@ async function composeAndUpload(baseUrl, footerUrl, options = {}) {
     const finalHeight = options.height || 1350; // Changed from 1080 to 1350 for Instagram 4:5 ratio
     
     // Calculate heights: 80% festival image, 20% footer section
-    const festivalHeight = Math.floor(finalHeight * 0.80); // 1080px for 1350 total
-    const footerHeight = finalHeight - festivalHeight;      // 270px for footer
+    const festivalHeight = Math.floor(finalHeight * 0.80);
+    const footerHeight = finalHeight - festivalHeight;
+    const seamBlendHeight = Math.max(12, Math.floor(finalHeight * 0.012));
 
     try {
         // Download both images
@@ -42,58 +43,17 @@ async function composeAndUpload(baseUrl, footerUrl, options = {}) {
             })
             .toBuffer();
 
-        // Step 2: Get footer image metadata to check aspect ratio
-        const footerMetadata = await sharp(footerBuffer).metadata();
-        const footerAspectRatio = footerMetadata.width / footerMetadata.height;
-        const targetAspectRatio = finalWidth / footerHeight; // Target horizontal ratio (4:1 for 1080x270)
-
-        let processedFooter;
-
-        // If footer is already horizontal-ish (aspect ratio > 1.5), stretch it to fit
-        if (footerAspectRatio >= 1.5) {
-            // Footer is already horizontal, just resize to fit the footer area
-            processedFooter = await sharp(footerBuffer)
-                .resize(finalWidth, footerHeight, {
-                    fit: 'fill', // Stretch to fill
-                    position: 'center'
-                })
-                .toBuffer();
-        } else {
-            // Footer is square/vertical, need to make it horizontal
-            // Strategy: Place the image centered on a white/colored background
-            const footerBgColor = options.footerBgColor || '#FFFFFF';
-            
-            // Scale the footer image to fit within the footer height while maintaining aspect ratio
-            const scaledFooterHeight = Math.floor(footerHeight * 0.85); // Use 85% of height for padding
-            const scaledFooterWidth = Math.floor(scaledFooterHeight * footerAspectRatio);
-            
-            const scaledFooter = await sharp(footerBuffer)
-                .resize(scaledFooterWidth, scaledFooterHeight, {
-                    fit: 'contain',
-                    position: 'center'
-                })
-                .toBuffer();
-
-            // Create white background and place footer image centered
-            processedFooter = await sharp({
-                create: {
-                    width: finalWidth,
-                    height: footerHeight,
-                    channels: 4,
-                    background: footerBgColor
-                }
+        // Step 2: Normalize footer to exact slot using bottom-anchored crop.
+        // This keeps the lower part of uploaded footer, which typically contains logos/text.
+        const processedFooter = await sharp(footerBuffer)
+            .resize(finalWidth, footerHeight, {
+                fit: 'cover',
+                position: 'south'
             })
-            .composite([{
-                input: scaledFooter,
-                top: Math.floor((footerHeight - scaledFooterHeight) / 2),
-                left: Math.floor((finalWidth - scaledFooterWidth) / 2)
-            }])
-            .png()
             .toBuffer();
-        }
 
         // Step 3: Combine festival image with footer
-        const finalComposition = await sharp(festivalImage)
+        let finalComposition = await sharp(festivalImage)
             .extend({
                 bottom: footerHeight,
                 background: { r: 255, g: 255, b: 255, alpha: 1 }
@@ -106,7 +66,29 @@ async function composeAndUpload(baseUrl, footerUrl, options = {}) {
             .png()
             .toBuffer();
 
-        // Step 4: Upload to Cloudinary
+        // Step 4: Add subtle seam blend so festival and footer join more naturally.
+        const seamOverlaySvg = Buffer.from(`
+            <svg width="${finalWidth}" height="${seamBlendHeight}" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="seam" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#000000" stop-opacity="0.14" />
+                  <stop offset="100%" stop-color="#000000" stop-opacity="0" />
+                </linearGradient>
+              </defs>
+              <rect x="0" y="0" width="100%" height="100%" fill="url(#seam)" />
+            </svg>
+        `);
+
+        finalComposition = await sharp(finalComposition)
+            .composite([{
+                input: seamOverlaySvg,
+                top: Math.max(0, festivalHeight - Math.floor(seamBlendHeight / 2)),
+                left: 0
+            }])
+            .png()
+            .toBuffer();
+
+        // Step 5: Upload to Cloudinary
         const pass = new stream.PassThrough();
         pass.end(finalComposition);
         const result = await uploadStream(pass, { 
