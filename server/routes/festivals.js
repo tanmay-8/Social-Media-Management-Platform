@@ -3,11 +3,10 @@ const auth = require('../middleware/auth');
 const router = express.Router();
 
 // @route   GET /api/festivals
-// @desc    Get festivals based on user's category preference
+// @desc    Get festivals available to the current user
 // @access  Private
 router.get('/', auth, async (req, res) => {
     try {
-        const userCategory = req.user.profile?.festivalCategory || 'all';
         const Festival = require('../models/Festival');
         
         // Build query
@@ -18,11 +17,6 @@ router.get('/', auth, async (req, res) => {
             query.year = parseInt(req.query.year);
         }
         
-        // Filter by category if not 'all'
-        if (userCategory !== 'all') {
-            query.category = userCategory;
-        }
-
         // Get all festivals matching criteria
         const allFestivals = await Festival.find(query).sort({ date: 1 });
         
@@ -38,7 +32,7 @@ router.get('/', auth, async (req, res) => {
         
         res.json({
             festivals,
-            category: userCategory,
+            category: 'all',
             year: req.query.year ? parseInt(req.query.year) : 'all',
             count: festivals.length
         });

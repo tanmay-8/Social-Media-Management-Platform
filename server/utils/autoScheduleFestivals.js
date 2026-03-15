@@ -4,10 +4,10 @@ const User = require('../models/User');
 const ScheduledPost = require('../models/ScheduledPost');
 
 /**
- * Auto-schedule festivals for users with matching preferences
+ * Auto-schedule festivals for all subscribed users
  * Runs daily at 7:00 AM IST (Indian Standard Time)
  * Creates scheduled posts for all festivals happening today
- * for users with active subscriptions and matching festival preferences
+ * for users with active subscriptions
  */
 
 // Helper function to get current time in IST
@@ -30,21 +30,6 @@ function getScheduleTime() {
     }
     
     return scheduleTime;
-}
-
-/**
- * Check if a festival matches user's preference
- */
-function festivalMatchesPreference(festival, userPreference) {
-    // User preference is stored as category
-    // Festival preferences: 'all', 'hindu', 'muslim', 'christian', 'sikh', 'buddhist', 'jain'
-    
-    if (userPreference === 'all') {
-        return true; // User wants all festivals
-    }
-    
-    // Check if festival category matches user preference
-    return festival.category?.toLowerCase() === userPreference?.toLowerCase();
 }
 
 /**
@@ -101,7 +86,7 @@ async function autoScheduleFestivalsForToday() {
         // Find all users with active subscriptions
         const activeUsers = await User.find({
             'subscription.isActive': true
-        }).select('_id name email festivalPreference profile.footerImage');
+        }).select('_id name email profile.footerImage');
         
         console.log(`\n👥 Found ${activeUsers.length} user(s) with active subscription(s)`);
         
@@ -122,11 +107,7 @@ async function autoScheduleFestivalsForToday() {
                 skipped: []
             };
             
-            // Get user's festival preference (defaults to 'all')
-            const userPreference = user.profile?.festivalCategory || 'all';
-            
             console.log(`\n👤 User: ${user.name} (${user.email})`);
-            console.log(`   Preference: ${userPreference}`);
             
             // Check if user has footer image (required for posting)
             if (!user.profile?.footerImage?.url) {
@@ -138,23 +119,10 @@ async function autoScheduleFestivalsForToday() {
                 continue;
             }
             
-            // Filter festivals that match user preference
-            const matchingFestivals = todaysFestivals.filter(festival => 
-                festivalMatchesPreference(festival, userPreference)
-            );
-            
-            console.log(`   🎯 Matching festivals: ${matchingFestivals.length}`);
-            
-            if (matchingFestivals.length === 0) {
-                console.log(`   ⏭️  No matching festivals for this user's preference`);
-                stats.skipped++;
-                userStats.skipped.push('No matching festivals');
-                stats.users.push(userStats);
-                continue;
-            }
-            
-            // For each matching festival, check if already scheduled
-            for (const festival of matchingFestivals) {
+            console.log(`   🎯 Festivals to schedule: ${todaysFestivals.length}`);
+
+            // For each festival, check if already scheduled
+            for (const festival of todaysFestivals) {
                 try {
                     // Check if this user already has a scheduled post for this festival today
                     // Get all scheduled posts for this user and festival

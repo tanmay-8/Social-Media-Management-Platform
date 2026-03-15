@@ -1,8 +1,6 @@
 import React, { createContext, useContext } from 'react';
 import { create } from 'zustand';
 
-export type FestivalPreference = 'hindu' | 'muslim' | 'all';
-
 export interface PartyInfo {
   type: 'predefined' | 'custom';
   name: string;
@@ -27,7 +25,6 @@ export interface UserProfile {
   facebookPageName?: string;
   instagramHandle?: string;
   party?: PartyInfo;
-  festivalPreference?: FestivalPreference;
 }
 
 export interface AppState {

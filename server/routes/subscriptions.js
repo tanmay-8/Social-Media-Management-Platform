@@ -162,17 +162,13 @@ router.post('/verify-payment', auth, async (req, res) => {
 
         console.log('✅ User subscription updated');
 
-        // Create scheduled posts for festivals within subscription period matching user's category
+        // Create scheduled posts for all festivals within subscription period
         try {
             const Festival = require('../models/Festival');
             const ScheduledPost = require('../models/ScheduledPost');
-
-            const userCategory = user.profile?.festivalCategory || 'all';
-            console.log('🎉 Creating scheduled posts for category:', userCategory);
             
             const festivals = await Festival.find({
-                date: { $gte: startDate, $lte: endDate },
-                ...(userCategory !== 'all' ? { category: userCategory } : {})
+                date: { $gte: startDate, $lte: endDate }
             });
 
             console.log(`📅 Found ${festivals.length} festivals in subscription period`);

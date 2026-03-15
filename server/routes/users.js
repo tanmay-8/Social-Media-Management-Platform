@@ -29,8 +29,7 @@ router.put('/profile', auth, [
     body('name').optional().trim().notEmpty().withMessage('Name cannot be empty'),
     body('phone').optional().trim(),
     body('instagramHandle').optional().trim(),
-    body('facebookPageId').optional().trim(),
-    body('festivalCategory').optional().isIn(['all', 'hindu', 'muslim']).withMessage('Invalid festival category')
+    body('facebookPageId').optional().trim()
 ], async (req, res) => {
     try {
         const errors = validationResult(req);
@@ -38,7 +37,7 @@ router.put('/profile', auth, [
             return res.status(400).json({ errors: errors.array() });
         }
 
-        const { name, phone, instagramHandle, facebookPageId, festivalCategory } = req.body;
+        const { name, phone, instagramHandle, facebookPageId } = req.body;
 
         const updateData = {
             updatedAt: new Date()
@@ -47,12 +46,11 @@ router.put('/profile', auth, [
         if (name) updateData.name = name;
         if (phone !== undefined) updateData.phone = phone;
         
-        if (instagramHandle !== undefined || facebookPageId !== undefined || festivalCategory !== undefined) {
+        if (instagramHandle !== undefined || facebookPageId !== undefined) {
             updateData.profile = {
                 ...(req.user.profile ? req.user.profile.toObject() : {}),
                 ...(instagramHandle !== undefined && { instagramHandle }),
-                ...(facebookPageId !== undefined && { facebookPageId }),
-                ...(festivalCategory !== undefined && { festivalCategory })
+                ...(facebookPageId !== undefined && { facebookPageId })
             };
         }
 

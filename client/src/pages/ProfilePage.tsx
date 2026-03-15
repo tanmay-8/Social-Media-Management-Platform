@@ -5,7 +5,6 @@ import { authService } from '../services/authService';
 import { userService } from '../services/userService';
 import { socialService } from '../services/socialService';
 import {
-  FestivalPreference,
   PartyInfo,
   useAppStore,
   UserProfile
@@ -16,7 +15,6 @@ interface ProfileFormValues {
   name: string;
   partyPredefined?: 'bjp' | 'congress' | '';
   customPartyName?: string;
-  festivalPreference: FestivalPreference;
 }
 
 export const ProfilePage = () => {
@@ -111,8 +109,7 @@ export const ProfilePage = () => {
           ? (user.party.name.toLowerCase() as 'bjp' | 'congress')
           : '',
       customPartyName:
-        user?.party?.type === 'custom' ? user.party.name : undefined,
-      festivalPreference: user?.festivalPreference ?? 'all'
+        user?.party?.type === 'custom' ? user.party.name : undefined
     }
   });
 
@@ -126,8 +123,7 @@ export const ProfilePage = () => {
     try {
       // Call backend API to save profile
       const result = await userService.updateProfile({
-        name: data.name,
-        festivalCategory: data.festivalPreference
+        name: data.name
       });
 
       // Update local store with saved data
@@ -146,8 +142,7 @@ export const ProfilePage = () => {
 
       const updated: Partial<UserProfile> = {
         name: data.name,
-        party,
-        festivalPreference: data.festivalPreference
+        party
       };
 
       updateProfile(updated);
@@ -442,42 +437,6 @@ export const ProfilePage = () => {
                   </span>
                 </div>
               </div>
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[0.85rem] text-[#003049]">Festival selection</label>
-              <div className="flex gap-2">
-                <label className="cursor-pointer rounded-full border border-[rgba(0,48,73,0.4)] px-3 py-1 text-[0.8rem] has-[:checked]:border-[#c1121f] has-[:checked]:bg-[rgba(193,18,31,0.08)]">
-                  <input
-                    type="radio"
-                    value="hindu"
-                    {...register('festivalPreference', { required: true })}
-                    className="hidden"
-                  />
-                  Hindu
-                </label>
-                <label className="cursor-pointer rounded-full border border-[rgba(0,48,73,0.4)] px-3 py-1 text-[0.8rem] has-[:checked]:border-[#c1121f] has-[:checked]:bg-[rgba(193,18,31,0.08)]">
-                  <input
-                    type="radio"
-                    value="muslim"
-                    {...register('festivalPreference', { required: true })}
-                    className="hidden"
-                  />
-                  Muslim
-                </label>
-                <label className="cursor-pointer rounded-full border border-[rgba(0,48,73,0.4)] px-3 py-1 text-[0.8rem] has-[:checked]:border-[#c1121f] has-[:checked]:bg-[rgba(193,18,31,0.08)]">
-                  <input
-                    type="radio"
-                    value="all"
-                    {...register('festivalPreference', { required: true })}
-                    className="hidden"
-                  />
-                  All
-                </label>
-              </div>
-              {errors.festivalPreference && (
-                <p className="m-0 text-xs text-[#c1121f]">Please choose at least one.</p>
-              )}
             </div>
 
             <div className="flex flex-col gap-1.5 rounded-xl border-2 border-[rgba(0,48,73,0.15)] bg-white p-4">

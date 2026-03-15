@@ -5,7 +5,6 @@ export interface UserProfile {
   phone?: string;
   instagramHandle?: string;
   facebookPageId?: string;
-  festivalCategory?: 'all' | 'hindu' | 'muslim';
 }
 
 export const userService = {

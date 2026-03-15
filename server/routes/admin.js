@@ -71,7 +71,6 @@ router.get('/users', auth, requireAdmin, async (req, res) => {
             profile: {
                 instagramHandle: user.profile?.instagramHandle,
                 facebookPageId: user.profile?.facebookPageId,
-                festivalCategory: user.profile?.festivalCategory,
                 profileImage: user.profile?.profileImage ? {
                     url: user.profile.profileImage.url,
                     source: user.profile.profileImage.source,
