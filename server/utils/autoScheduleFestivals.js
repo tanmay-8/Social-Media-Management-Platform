@@ -244,7 +244,6 @@ module.exports = {
     startFestivalScheduler,
     manualTrigger,
     autoScheduleFestivalsForToday,
-    festivalMatchesPreference,
     getTodayDate,
     getScheduleTime
 };
