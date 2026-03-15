@@ -15,9 +15,18 @@ export const adminService = {
 
   async updateUser(
     userId: string,
-    data: { name?: string; email?: string; phone?: string }
+    data: { name?: string; email?: string; phone?: string; address?: string }
   ): Promise<{ message: string; user: User }> {
     return api.patch(API_CONFIG.ENDPOINTS.ADMIN_USER_BY_ID(userId), data);
+  },
+
+  async getUserImages(userId: string): Promise<{
+    images: {
+      profileImage: { url: string; downloadUrl?: string } | null;
+      footerImage: { url: string; downloadUrl?: string } | null;
+    };
+  }> {
+    return api.get(API_CONFIG.ENDPOINTS.ADMIN_USER_PROFILE_IMAGES(userId));
   },
 
   async changeUserRole(

@@ -8,6 +8,11 @@ export const festivalService = {
     return api.get(API_CONFIG.ENDPOINTS.FESTIVALS);
   },
 
+  // Admin only list (includes past, present, future)
+  async getAllFestivalsAdmin(): Promise<{ festivals: Festival[] }> {
+    return api.get(API_CONFIG.ENDPOINTS.ADMIN_FESTIVALS);
+  },
+
   async getFestivalById(id: string): Promise<{ festival: Festival }> {
     return api.get(API_CONFIG.ENDPOINTS.FESTIVAL_BY_ID(id));
   },

@@ -25,7 +25,7 @@ router.post('/signup', [
             return res.status(400).json({ errors: errors.array() });
         }
 
-        const { name, email, password, phone } = req.body;
+        const { name, email, password, phone, address } = req.body;
 
         // Check if user already exists
         const existingUser = await User.findOne({ email });
@@ -38,7 +38,8 @@ router.post('/signup', [
             name,
             email,
             password,
-            phone
+            phone,
+            address
         });
 
         await user.save();
@@ -53,6 +54,7 @@ router.post('/signup', [
                 id: user._id,
                 name: user.name,
                 email: user.email,
+                address: user.address,
                 role: user.role,
                 facebookId: user.facebookId,
                 authProvider: user.authProvider,
@@ -102,6 +104,7 @@ router.post('/login', [
                 id: user._id,
                 name: user.name,
                 email: user.email,
+                address: user.address,
                 role: user.role,
                 facebookId: user.facebookId,
                 authProvider: user.authProvider,
@@ -126,6 +129,7 @@ router.get('/me', auth, async (req, res) => {
                 name: req.user.name,
                 email: req.user.email,
                 phone: req.user.phone,
+                address: req.user.address,
                 role: req.user.role,
                 facebookId: req.user.facebookId,
                 authProvider: req.user.authProvider,

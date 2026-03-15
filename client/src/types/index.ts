@@ -3,6 +3,7 @@ export interface User {
   name: string;
   email: string;
   phone?: string;
+  address?: string;
   role?: 'user' | 'admin';
   facebookId?: string;
   authProvider?: 'local' | 'facebook';
@@ -68,4 +69,5 @@ export interface LoginCredentials {
 export interface SignupData extends LoginCredentials {
   name: string;
   phone?: string;
+  address?: string;
 }

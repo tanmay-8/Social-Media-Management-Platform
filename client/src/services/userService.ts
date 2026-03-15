@@ -3,6 +3,7 @@ import { api } from './api';
 export interface UserProfile {
   name?: string;
   phone?: string;
+  address?: string;
   instagramHandle?: string;
   facebookPageId?: string;
 }

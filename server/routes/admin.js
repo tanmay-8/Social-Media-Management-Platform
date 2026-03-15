@@ -61,10 +61,11 @@ router.get('/users', auth, requireAdmin, async (req, res) => {
         
         // Format response with image info
         const usersWithImages = users.map(user => ({
-            _id: user._id,
+            id: user._id,
             name: user.name,
             email: user.email,
             phone: user.phone,
+            address: user.address,
             role: user.role,
             authProvider: user.authProvider,
             subscription: user.subscription,
@@ -219,6 +220,28 @@ router.post('/users/:id/footer', auth, requireAdmin, upload.single('footer'), as
     } catch (err) {
         console.error('Upload footer error:', err);
         res.status(500).json({ message: 'Upload failed' });
+    }
+});
+
+/**
+ * @swagger
+ * /api/admin/festivals:
+ *   get:
+ *     summary: Get all festivals including past, present, and future (admin)
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of all festivals
+ */
+// Get all festivals for admin (no date filtering)
+router.get('/festivals', auth, requireAdmin, async (req, res) => {
+    try {
+        const festivals = await Festival.find().sort({ date: 1, createdAt: -1 });
+        res.json({ festivals });
+    } catch (err) {
+        console.error('Get admin festivals error:', err);
+        res.status(500).json({ message: 'Failed to fetch festivals' });
     }
 });
 
@@ -446,7 +469,7 @@ router.delete('/festivals/:id', auth, requireAdmin, async (req, res) => {
 // Update user
 router.patch('/users/:id', auth, requireAdmin, async (req, res) => {
     try {
-        const { name, email, phone } = req.body;
+        const { name, email, phone, address } = req.body;
         const user = await User.findById(req.params.id);
         
         if (!user) {
@@ -456,6 +479,7 @@ router.patch('/users/:id', auth, requireAdmin, async (req, res) => {
         if (name) user.name = name;
         if (email) user.email = email;
         if (phone !== undefined) user.phone = phone;
+        if (address !== undefined) user.address = address;
 
         await user.save();
         
@@ -466,6 +490,7 @@ router.patch('/users/:id', auth, requireAdmin, async (req, res) => {
                 name: user.name,
                 email: user.email,
                 phone: user.phone,
+                address: user.address,
                 role: user.role,
                 subscription: user.subscription
             }

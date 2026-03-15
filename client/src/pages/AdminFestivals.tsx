@@ -36,7 +36,7 @@ export default function AdminFestivals() {
   const fetchFestivals = async () => {
     try {
       setError(null);
-      const data = await festivalService.getAllFestivals();
+      const data = await festivalService.getAllFestivalsAdmin();
       setFestivals(data.festivals || []);
     } catch (error: any) {
       console.error('Failed to fetch festivals:', error);

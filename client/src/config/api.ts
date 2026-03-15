@@ -17,6 +17,7 @@ export const API_CONFIG = {
     ADMIN_USERS: '/api/admin/users',
     ADMIN_USER_BY_ID: (id: string) => `/api/admin/users/${id}`,
     ADMIN_USER_ROLE: (id: string) => `/api/admin/users/${id}/role`,
+    ADMIN_USER_PROFILE_IMAGES: (id: string) => `/api/admin/users/${id}/profile-images`,
     ADMIN_USER_FOOTER: (id: string) => `/api/admin/users/${id}/footer`,
     ADMIN_FESTIVALS: '/api/admin/festivals',
     ADMIN_FESTIVAL_BY_ID: (id: string) => `/api/admin/festivals/${id}`,

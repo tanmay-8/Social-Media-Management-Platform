@@ -13,6 +13,7 @@ import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
 
 interface ProfileFormValues {
   name: string;
+  address?: string;
   partyPredefined?: 'bjp' | 'congress' | '';
   customPartyName?: string;
 }
@@ -58,6 +59,7 @@ export const ProfilePage = () => {
           id: result.user.id,
           name: result.user.name,
           email: result.user.email,
+          address: result.user.address,
           role: result.user.role,
           facebookId: result.user.facebookId,
           photoUrl: result.user.profile?.footerImage?.url
@@ -104,6 +106,7 @@ export const ProfilePage = () => {
   } = useForm<ProfileFormValues>({
     defaultValues: {
       name: user?.name ?? '',
+      address: user?.address ?? '',
       partyPredefined:
         user?.party?.type === 'predefined'
           ? (user.party.name.toLowerCase() as 'bjp' | 'congress')
@@ -123,7 +126,8 @@ export const ProfilePage = () => {
     try {
       // Call backend API to save profile
       const result = await userService.updateProfile({
-        name: data.name
+        name: data.name,
+        address: data.address
       });
 
       // Update local store with saved data
@@ -142,6 +146,7 @@ export const ProfilePage = () => {
 
       const updated: Partial<UserProfile> = {
         name: data.name,
+        address: data.address,
         party
       };
 
@@ -211,6 +216,7 @@ export const ProfilePage = () => {
         id: userResult.user.id,
         name: userResult.user.name,
         email: userResult.user.email,
+        address: userResult.user.address,
         role: userResult.user.role,
         facebookId: userResult.user.facebookId,
         photoUrl: userResult.user.profile?.profileImage?.url
@@ -276,6 +282,7 @@ export const ProfilePage = () => {
         id: userResult.user.id,
         name: userResult.user.name,
         email: userResult.user.email,
+        address: userResult.user.address,
         role: userResult.user.role,
         facebookId: userResult.user.facebookId,
         facebookPageName: userResult.user.profile?.facebookPageName,
@@ -365,6 +372,17 @@ export const ProfilePage = () => {
               {errors.name && (
                 <p className="m-0 text-xs text-[#c1121f]">{errors.name.message}</p>
               )}
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="address" className="text-[0.85rem] text-[#003049]">Address</label>
+              <textarea
+                id="address"
+                rows={3}
+                placeholder="Your address"
+                className="rounded-xl border border-[rgba(0,48,73,0.3)] bg-[#fffaf0] px-3 py-2 text-[0.9rem] text-[#003049] placeholder:text-[#c9bfb6] focus:border-[#669bbc] focus:outline-none focus:ring-2 focus:ring-[#669bbc]/20"
+                {...register('address')}
+              />
             </div>
 
             <div className="flex flex-col gap-1.5">

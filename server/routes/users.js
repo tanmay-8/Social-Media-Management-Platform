@@ -28,6 +28,7 @@ router.get('/profile', auth, async (req, res) => {
 router.put('/profile', auth, [
     body('name').optional().trim().notEmpty().withMessage('Name cannot be empty'),
     body('phone').optional().trim(),
+    body('address').optional().trim(),
     body('instagramHandle').optional().trim(),
     body('facebookPageId').optional().trim()
 ], async (req, res) => {
@@ -37,7 +38,7 @@ router.put('/profile', auth, [
             return res.status(400).json({ errors: errors.array() });
         }
 
-        const { name, phone, instagramHandle, facebookPageId } = req.body;
+        const { name, phone, address, instagramHandle, facebookPageId } = req.body;
 
         const updateData = {
             updatedAt: new Date()
@@ -45,6 +46,7 @@ router.put('/profile', auth, [
 
         if (name) updateData.name = name;
         if (phone !== undefined) updateData.phone = phone;
+        if (address !== undefined) updateData.address = address;
         
         if (instagramHandle !== undefined || facebookPageId !== undefined) {
             updateData.profile = {
