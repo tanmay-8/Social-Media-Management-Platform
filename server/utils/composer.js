@@ -17,8 +17,7 @@ const { uploadStream } = require('./cloudinary');
 async function composeAndUpload(baseUrl, footerUrl, options = {}) {
     // Instagram optimal sizes: 1080x1350 (4:5 portrait) - most feed real estate
     const finalWidth = options.width || 1080;
-    const finalHeight = options.height || 1350; // Changed from 1080 to 1350 for Instagram 4:5 ratio
-    const seamBlendHeight = Math.max(12, Math.floor(finalHeight * 0.012));
+    const finalHeight = options.height || 1350;
 
     try {
         // Download both images
@@ -63,29 +62,7 @@ async function composeAndUpload(baseUrl, footerUrl, options = {}) {
             .png()
             .toBuffer();
 
-        // Step 4: Add subtle seam blend so festival and footer join more naturally.
-        const seamOverlaySvg = Buffer.from(`
-            <svg width="${finalWidth}" height="${seamBlendHeight}" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <linearGradient id="seam" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stop-color="#000000" stop-opacity="0.14" />
-                  <stop offset="100%" stop-color="#000000" stop-opacity="0" />
-                </linearGradient>
-              </defs>
-              <rect x="0" y="0" width="100%" height="100%" fill="url(#seam)" />
-            </svg>
-        `);
-
-        finalComposition = await sharp(finalComposition)
-            .composite([{
-                input: seamOverlaySvg,
-                top: Math.max(0, footerTop - Math.floor(seamBlendHeight / 2)),
-                left: 0
-            }])
-            .png()
-            .toBuffer();
-
-        // Step 5: Upload to Cloudinary
+        // Step 4: Upload to Cloudinary
         const pass = new stream.PassThrough();
         pass.end(finalComposition);
         const result = await uploadStream(pass, { 
