@@ -62,9 +62,9 @@ export const ProfilePage = () => {
           address: result.user.address,
           role: result.user.role,
           facebookId: result.user.facebookId,
-          photoUrl: result.user.profile?.footerImage?.url
+          photoUrl: result.user.profile?.profileImage?.url
         });
-        
+
         // If user has Facebook connected, fetch their pages
         if (result.user.facebookId) {
           fetchFacebookPages();
@@ -73,13 +73,13 @@ export const ProfilePage = () => {
         console.error('Failed to fetch user data:', error);
       }
     };
-    
+
     fetchUserData();
-    
+
     // Check for Facebook connection success/error in URL
     const fbConnected = searchParams.get('facebook_connected');
     const error = searchParams.get('error');
-    
+
     if (fbConnected === 'true') {
       setFacebookSuccess('Facebook account connected successfully!');
       setTimeout(() => setFacebookSuccess(null), 5000);
@@ -134,15 +134,15 @@ export const ProfilePage = () => {
       const party: PartyInfo | undefined =
         data.partyPredefined
           ? {
-              type: 'predefined',
-              name: data.partyPredefined.toUpperCase()
-            }
+            type: 'predefined',
+            name: data.partyPredefined.toUpperCase()
+          }
           : data.customPartyName
-          ? {
+            ? {
               type: 'custom',
               name: data.customPartyName
             }
-          : undefined;
+            : undefined;
 
       const updated: Partial<UserProfile> = {
         name: data.name,
@@ -151,7 +151,7 @@ export const ProfilePage = () => {
       };
 
       updateProfile(updated);
-      
+
       setSaveSuccess('Profile saved successfully!');
       setTimeout(() => setSaveSuccess(null), 3000);
     } catch (error) {
@@ -173,10 +173,10 @@ export const ProfilePage = () => {
     try {
       // Upload to backend
       const result = await userService.uploadFooter(file);
-      
+
       // Update local store with new image URL
       updateProfile({ photoUrl: result.url });
-      
+
       setSaveSuccess('Footer image uploaded successfully!');
       setTimeout(() => setSaveSuccess(null), 3000);
     } catch (error) {
@@ -206,10 +206,10 @@ export const ProfilePage = () => {
     try {
       // Upload to backend
       const result = await userService.uploadProfileImage(file);
-      
+
       setSaveSuccess('Profile image uploaded successfully!');
       setTimeout(() => setSaveSuccess(null), 3000);
-      
+
       // Refresh user data to get updated profile image
       const userResult = await authService.getCurrentUser();
       login({
@@ -273,9 +273,9 @@ export const ProfilePage = () => {
       });
 
       setFacebookSuccess('Facebook Page connected successfully!');
-      
+
       setSelectedPage(''); // Reset selection
-      
+
       // Refresh user data
       const userResult = await authService.getCurrentUser();
       login({
@@ -308,7 +308,7 @@ export const ProfilePage = () => {
     try {
       await authService.disconnectFacebook();
       setFacebookSuccess('Facebook account disconnected successfully');
-      
+
       // Update user in store
       updateProfile({
         ...user,
@@ -353,7 +353,7 @@ export const ProfilePage = () => {
                 {saveError}
               </div>
             )}
-            
+
             {saveSuccess && (
               <div className="flex items-center gap-2 rounded-lg bg-green-50 p-3 text-sm text-green-700 border border-green-200">
                 <CheckCircle className="h-4 w-4" />
@@ -393,10 +393,10 @@ export const ProfilePage = () => {
               <div className="flex items-start gap-4">
                 <div className="flex flex-col gap-2">
                   {profileImagePreview || user?.photoUrl ? (
-                    <img 
-                      src={profileImagePreview || user?.photoUrl} 
-                      alt="Profile" 
-                      className="h-24 w-24 rounded-lg object-cover border-2 border-[rgba(0,48,73,0.15)]" 
+                    <img
+                      src={profileImagePreview || user?.photoUrl}
+                      alt="Profile"
+                      className="h-24 w-24 rounded-lg object-cover border-2 border-[rgba(0,48,73,0.15)]"
                     />
                   ) : (
                     <div className="flex h-24 w-24 items-center justify-center rounded-lg bg-[radial-gradient(circle_at_30%_0,#c1121f,#780000_60%,#003049)] text-3xl text-[#fdf0d5]">
@@ -462,14 +462,14 @@ export const ProfilePage = () => {
               <p className="text-[0.8rem] text-[#7f7270] mb-2">
                 Connect your Facebook account and select the page where festival posts should be published.
               </p>
-              
+
               {facebookError && (
                 <div className="mb-2 flex items-center gap-2 rounded-lg bg-red-50 p-3 text-sm text-red-700 border border-red-200">
                   <XCircle className="h-4 w-4" />
                   {facebookError}
                 </div>
               )}
-              
+
               {facebookSuccess && (
                 <div className="mb-2 flex items-center gap-2 rounded-lg bg-green-50 p-3 text-sm text-green-700 border border-green-200">
                   <CheckCircle className="h-4 w-4" />
@@ -594,7 +594,7 @@ export const ProfilePage = () => {
                     className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-full border-2 border-[rgba(0,48,73,0.15)] bg-white px-4 py-2 text-[0.85rem] font-medium text-[#003049] transition-all duration-150 hover:border-[#1877F2] hover:bg-[#f8f9fa]"
                   >
                     <svg className="h-4 w-4" viewBox="0 0 24 24" fill="#1877F2">
-                      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
                     </svg>
                     Connect Facebook
                   </button>

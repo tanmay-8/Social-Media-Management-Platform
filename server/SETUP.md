@@ -1,78 +1,123 @@
-# Quick Setup Guide
+# Server Setup Guide
 
-## Step 1: Install Dependencies
+This document explains how to run the backend API in local development.
+
+## 1. Prerequisites
+
+- Node.js 18+
+- npm 9+
+- MongoDB (local or Atlas)
+- Cloudinary account (required for image upload/composition)
+
+Optional for full features:
+
+- Razorpay account (subscriptions)
+- Meta app credentials (Facebook/Instagram integrations)
+
+## 2. Install Dependencies
+
+Run from the server directory:
+
 ```bash
+cd server
 npm install
 ```
 
-## Step 2: Configure Environment Variables
-Create a `.env` file in the root directory:
+## 3. Configure Environment Variables
+
+Create server/.env:
 
 ```env
+# Core
 PORT=3000
 MONGODB_URI=mongodb://localhost:27017/social-media-platform
-JWT_SECRET=your-super-secret-jwt-key-change-this-in-production-min-32-chars
-RAZORPAY_KEY_ID=your-razorpay-key-id
-RAZORPAY_KEY_SECRET=your-razorpay-key-secret
+JWT_SECRET=replace-with-a-long-random-secret
+CORS_ALLOWED_ORIGIN=http://localhost:5173
+
+# OAuth URLs
+SERVER_URL=http://localhost:3000
+CLIENT_URL=http://localhost:5173
+
+# Razorpay (optional unless testing subscriptions)
+RAZORPAY_KEY_ID=your_razorpay_key_id
+RAZORPAY_KEY_SECRET=your_razorpay_key_secret
+
+# Cloudinary (required for profile/footer uploads and composed images)
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+
+# Meta/Facebook/Instagram (optional unless testing social posting)
+FACEBOOK_APP_ID=your_facebook_app_id
+FACEBOOK_APP_SECRET=your_facebook_app_secret
+META_APP_ID=your_meta_app_id
+META_APP_SECRET=your_meta_app_secret
 ```
 
-### Getting Razorpay Credentials:
-1. Sign up at https://razorpay.com/
-2. Go to Settings → API Keys
-3. Generate test keys (for development) or live keys (for production)
-4. Copy Key ID and Key Secret to `.env`
+Notes:
 
-## Step 3: Start MongoDB
-- **Local MongoDB**: Make sure MongoDB is running on your system
-- **MongoDB Atlas**: Use the connection string from your Atlas cluster
+- `JWT_SECRET` should be at least 32 characters.
+- `SERVER_URL` and `CLIENT_URL` are required for Facebook OAuth callback flow.
+- If Meta or Cloudinary vars are missing, server starts but related routes fail or are skipped.
 
-## Step 4: Run the Application
-```bash
-npm start
-```
+## 4. Run the API
 
-Or for development with auto-reload:
 ```bash
 npm run dev
 ```
 
-## Step 5: Access the Application
-Open your browser and go to: `http://localhost:3000`
+Production mode locally:
 
-## Testing the Application
+```bash
+npm start
+```
 
-1. **Sign Up**: Go to `/signup` and create an account
-2. **Login**: Use your credentials to login
-3. **Complete Profile**: 
-   - Add Instagram handle (optional)
-   - Add Facebook Page ID (optional)
-   - Select festival category
-4. **Subscribe**: Choose a plan and test payment (use Razorpay test mode)
-5. **Use Image Combiner**: Go to home page and combine images
+## 5. Verify the Server
 
-## Troubleshooting
+- Health check: `GET http://localhost:3000/api/health`
+- API docs: `http://localhost:3000/api/docs`
 
-### MongoDB Connection Error
-- Check if MongoDB is running: `mongod --version`
-- Verify connection string in `.env`
-- For Atlas: Check IP whitelist and credentials
+## 6. Useful Scripts
 
-### Razorpay Payment Not Working
-- Verify Key ID and Key Secret in `.env`
-- Check Razorpay dashboard for active keys
-- Use test mode keys for development
+Run from server directory:
 
-### Port Already in Use
-- Change `PORT` in `.env` to another port (e.g., 3001)
-- Or stop the process using port 3000
+- `npm run import-festivals` imports festivals from `scripts/festivals.json`
+- `node scripts/createAdmin.js` creates an admin user
+- `node scripts/deleteFestivals.js` deletes festival data
 
-## Next Steps
+## 7. What Runs Automatically
 
-After setup, you can:
-- Customize subscription prices in `routes/subscriptions.js`
-- Add more festival categories
-- Integrate Instagram/Facebook APIs for auto-posting
-- Add more features to the dashboard
+When the server starts:
+
+- Auto-post scheduler starts (`utils/autoPostScheduler.js`)
+- Festival auto-scheduler starts (`utils/autoScheduleFestivals.js`)
+
+## 8. Troubleshooting
+
+### MongoDB connection error
+
+- Confirm `MONGODB_URI` is correct.
+- For Atlas, check IP allowlist and credentials.
+
+### 401 Unauthorized on protected routes
+
+- Ensure JWT token is sent as `Authorization: Bearer <token>`.
+- Confirm `JWT_SECRET` matches the one used when issuing the token.
+
+### Facebook OAuth redirect mismatch
+
+- Confirm Meta app redirect URI exactly matches:
+   `SERVER_URL/api/auth/facebook/callback`
+- Confirm `SERVER_URL` and `CLIENT_URL` values are correct.
+
+### Image upload/compose failures
+
+- Verify Cloudinary variables.
+- Check server logs for Cloudinary upload errors.
+
+## 9. Next Docs
+
+For production deployment instructions, use the root deploy.md file.
 
 
 

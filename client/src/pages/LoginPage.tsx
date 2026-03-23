@@ -26,7 +26,7 @@ export const LoginPage = () => {
     if (currentUser) {
       navigate('/', { replace: true });
     }
-    
+
     // Check for OAuth error in URL
     const error = searchParams.get('error');
     if (error) {
@@ -41,16 +41,16 @@ export const LoginPage = () => {
         email: data.email,
         password: data.password
       });
-      
+
       // Update store with user data including role
       login({
         id: result.user.id,
         name: result.user.name,
         email: result.user.email,
         role: result.user.role,
-        photoUrl: result.user.profile?.footerImage?.url
+        photoUrl: result.user.profile?.profileImage?.url
       });
-      
+
       navigate('/profile');
     } catch (err) {
       const message =
@@ -102,9 +102,9 @@ export const LoginPage = () => {
 
       {submitError && <p className="m-0 rounded-lg bg-red-50 p-3 text-sm font-medium text-[#c1121f] border border-red-200">{submitError}</p>}
 
-      <button 
-        className="group relative mt-2 inline-flex w-full cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-xl border-0 bg-gradient-to-r from-[#780000] via-[#c1121f] to-[#780000] bg-size-200 px-6 py-3.5 text-[0.95rem] font-semibold text-white shadow-lg transition-all duration-300 hover:bg-pos-100 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100" 
-        type="submit" 
+      <button
+        className="group relative mt-2 inline-flex w-full cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-xl border-0 bg-gradient-to-r from-[#780000] via-[#c1121f] to-[#780000] bg-size-200 px-6 py-3.5 text-[0.95rem] font-semibold text-white shadow-lg transition-all duration-300 hover:bg-pos-100 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100"
+        type="submit"
         disabled={isSubmitting}
       >
         {isSubmitting ? (

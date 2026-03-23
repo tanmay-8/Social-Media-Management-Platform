@@ -26,16 +26,16 @@ export const AuthCallbackPage = () => {
 
       try {
         const result = await authService.handleOAuthCallback(token);
-        
+
         login({
           id: result.user.id,
           name: result.user.name,
           email: result.user.email,
           role: result.user.role,
           facebookId: result.user.facebookId,
-          photoUrl: result.user.profile?.footerImage?.url
+          photoUrl: result.user.profile?.profileImage?.url
         });
-        
+
         navigate('/profile');
       } catch (err) {
         console.error('OAuth callback error:', err);

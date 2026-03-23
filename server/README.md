@@ -1,193 +1,107 @@
-# Social Media Management Platform
+# Social Media Management Platform - Backend
 
-A full-stack social media management platform that combines images, manages user subscriptions, and automates festival-based post scheduling for Instagram and Facebook.
+Express + MongoDB API for festival automation, profile management, subscription handling, image composition, and social posting.
 
-## Features
+## What This Backend Does
 
-### Current Features
-1. **User Authentication** - Sign up, login, and secure session management
-2. **User Profiles** - Manage personal information and social media accounts
-3. **Subscription Management** - Razorpay integration for 3, 6, and 12-month plans
-4. **Festival Categories** - Filter festivals by category (All, Hindu, Muslim)
-5. **Image Combiner** - Combine main images with footer images for social media posts
-6. **Festival Calendar** - View upcoming festivals based on user preferences
-
-### Upcoming Features
-- Automated post scheduling to Instagram and Facebook
-- Integration with Meta Business Suite API
-- Automated image generation for festival posts
+- Email/password and Facebook OAuth authentication
+- User profile management including address and social handles
+- Profile/footer image uploads to Cloudinary
+- Festival management and filtering
+- Subscription workflow (Razorpay)
+- Scheduled posting pipeline
+- Compose festival + footer images for publishing
+- Admin APIs for users, festivals, and assets
+- User-facing posted-history endpoint for downloaded published images
 
 ## Tech Stack
 
-### Backend
-- **Node.js** with Express.js
-- **MongoDB** with Mongoose
-- **JWT** for authentication
-- **Razorpay** for payment processing
-- **Express Validator** for input validation
+- Node.js + Express
+- MongoDB + Mongoose
+- JWT authentication
+- Cloudinary image storage
+- Sharp image composition
+- Razorpay payments
+- Swagger API docs
+- node-cron schedulers
 
-### Frontend
-- **HTML5** / **CSS3** / **JavaScript**
-- **Razorpay Checkout** for payments
-- **JSZip** for batch downloads
-
-## Project Structure
+## Directory Overview
 
 ```
-Social-Media-Management-Platform
-├── server.js              # Express server entry point
-├── package.json           # Node.js dependencies
-├── .env.example           # Environment variables template
-├── models/
-│   └── User.js           # User model with subscription schema
-├── routes/
-│   ├── auth.js           # Authentication routes
-│   ├── users.js          # User profile routes
-│   ├── subscriptions.js  # Subscription & payment routes
-│   └── festivals.js      # Festival data routes
-├── middleware/
-│   └── auth.js           # JWT authentication middleware
-└── public/
-    ├── index.html        # Image combiner page
-    ├── login.html        # Login page
-    ├── signup.html       # Signup page
-    ├── dashboard.html    # User dashboard
-    ├── profile.html      # Profile management
-    ├── styles.css        # Image combiner styles
-    ├── auth-styles.css   # Auth pages styles
-    ├── dashboard-styles.css # Dashboard styles
-    ├── script.js         # Image combiner logic
-    ├── auth.js           # Authentication logic
-    ├── dashboard.js      # Dashboard logic
-    └── profile.js         # Profile management logic
+server/
+  app.js
+  package.json
+  middleware/
+  models/
+  routes/
+  scripts/
+  utils/
 ```
 
-## Setup Instructions
+## Run Locally
 
-### Prerequisites
-- Node.js (v14 or higher)
-- MongoDB (local or MongoDB Atlas)
-- Razorpay account (for payment processing)
+1. Install dependencies:
 
-### Installation
+```bash
+cd server
+npm install
+```
 
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd Social-Media-Management-Platform
-   ```
+2. Create `.env` with required values (see [SETUP.md](SETUP.md)).
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
+3. Start server:
 
-3. **Set up environment variables**
-   ```bash
-   cp .env.example .env
-   ```
-   
-   Edit `.env` and add your configuration:
-   ```env
-   PORT=3000
-   MONGODB_URI=mongodb://localhost:27017/social-media-platform
-   JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
-   RAZORPAY_KEY_ID=your-razorpay-key-id
-   RAZORPAY_KEY_SECRET=your-razorpay-key-secret
-   ```
+```bash
+npm run dev
+```
 
-4. **Set up MongoDB**
-   - Option 1: Local MongoDB
-     - Install MongoDB locally
-     - Start MongoDB service
-   - Option 2: MongoDB Atlas
-     - Create account at [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
-     - Create cluster and get connection string
-     - Update `MONGODB_URI` in `.env`
+4. Verify:
 
-5. **Set up Razorpay**
-   - Create account at [Razorpay](https://razorpay.com/)
-   - Get your Key ID and Key Secret from dashboard
-   - Update `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET` in `.env`
+- `GET /api/health`
+- Swagger: `/api/docs`
 
-6. **Start the server**
-   ```bash
-   npm start
-   ```
-   
-   For development with auto-reload:
-   ```bash
-   npm run dev
-   ```
+## Main Routes
 
-7. **Access the application**
-   - Open browser and navigate to `http://localhost:3000`
-   - Sign up for a new account or login
+- `/api/auth` authentication and Facebook OAuth
+- `/api/users` user profile and image uploads
+- `/api/subscriptions` Razorpay billing/subscription state
+- `/api/festivals` user-facing festivals
+- `/api/scheduled` scheduling and posted history
+- `/api/social` Facebook page integration and manual test post
+- `/api/compose` composition test utilities
+- `/api/admin` admin-only operations
 
-## API Endpoints
+## Posted History for Users
 
-### Authentication
-- `POST /api/auth/signup` - Register new user
-- `POST /api/auth/login` - Login user
-- `GET /api/auth/me` - Get current user (Protected)
+The backend exposes:
 
-### User Profile
-- `GET /api/users/profile` - Get user profile (Protected)
-- `PUT /api/users/profile` - Update user profile (Protected)
+- `GET /api/scheduled/posted`
 
-### Subscriptions
-- `POST /api/subscriptions/create-order` - Create Razorpay order (Protected)
-- `POST /api/subscriptions/verify-payment` - Verify payment and activate subscription (Protected)
-- `GET /api/subscriptions/status` - Get subscription status (Protected)
+This endpoint returns only the logged-in user's successfully posted items with normalized `imageUrl`, `postedAt`, festival details, and platform status so the frontend can show downloadable posted images.
 
-### Festivals
-- `GET /api/festivals` - Get festivals based on user category (Protected)
+## Schedulers
 
-## Subscription Plans
+On startup, the backend automatically starts:
 
-- **3 Months**: ₹999
-- **6 Months**: ₹1,799
-- **12 Months**: ₹2,999
+- Auto-post scheduler (`utils/autoPostScheduler.js`)
+- Festival auto-scheduler (`utils/autoScheduleFestivals.js`)
 
-## Festival Categories
+## Environment Variables (Summary)
 
-Users can select from:
-- **All Festivals** - All festivals from the calendar
-- **Hindu Festivals** - Only Hindu festivals
-- **Muslim Festivals** - Only Muslim festivals
+- Core: `PORT`, `MONGODB_URI`, `JWT_SECRET`, `CORS_ALLOWED_ORIGIN`
+- OAuth URLs: `SERVER_URL`, `CLIENT_URL`
+- Cloudinary: `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`
+- Razorpay: `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`
+- Meta/Facebook: `FACEBOOK_APP_ID`, `FACEBOOK_APP_SECRET`, `META_APP_ID`, `META_APP_SECRET`
 
-## Usage
+Refer to [SETUP.md](SETUP.md) for exact setup steps.
 
-1. **Sign Up**: Create a new account with email and password
-2. **Complete Profile**: Add Instagram handle, Facebook Page ID, and select festival category
-3. **Subscribe**: Choose a subscription plan and complete payment via Razorpay
-4. **Combine Images**: Use the Image Combiner tool to create social media posts
-5. **View Festivals**: Check upcoming festivals based on your category preference
+## Scripts
 
-## Development
+- `npm start` run production server
+- `npm run dev` run with nodemon
+- `npm run import-festivals` import festivals JSON
 
-### Adding New Features
-- Backend routes: Add to `routes/` directory
-- Frontend pages: Add HTML files to `public/` directory
-- Models: Add to `models/` directory
+## Production Deployment
 
-### Testing
-- Test authentication flows
-- Test payment integration (use Razorpay test keys)
-- Test festival filtering logic
-
-## Security Notes
-
-- Never commit `.env` file to version control
-- Use strong JWT_SECRET in production
-- Validate all user inputs
-- Use HTTPS in production
-- Implement rate limiting for API endpoints
-
-## License
-
-This project is open-source and available under the MIT License.
-
-## Support
-
-For issues or questions, please open an issue in the repository.
+Use the root deployment guide: [../deploy.md](../deploy.md)
