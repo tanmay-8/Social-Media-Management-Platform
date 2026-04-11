@@ -67,7 +67,12 @@ function resolveFestivalBaseImage(festival, preferredImageId) {
         let selected = null;
 
         if (preferred) {
-            selected = images.find((image) => String(image._id) === preferred) || null;
+            selected =
+                images.find((image) => {
+                    const imageId = image?._id ? String(image._id) : null;
+                    const imagePublicId = image?.public_id ? String(image.public_id) : null;
+                    return imageId === preferred || imagePublicId === preferred;
+                }) || null;
         }
 
         if (!selected && festival?.defaultBaseImageId) {
@@ -81,7 +86,7 @@ function resolveFestivalBaseImage(festival, preferredImageId) {
         }
 
         return {
-            id: selected?._id ? String(selected._id) : null,
+            id: selected?._id ? String(selected._id) : selected?.public_id ? String(selected.public_id) : null,
             url: selected?.url || null,
             public_id: selected?.public_id || null,
         };

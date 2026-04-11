@@ -119,6 +119,36 @@ router.post('/', auth, async (req, res) => {
 
         const resolvedImage = resolveFestivalBaseImage(festival, selectedBaseImageId);
 
+        // Enforce one active scheduled post per user per festival.
+        const existingScheduled = await ScheduledPost.findOne({
+            user: req.user._id,
+            festival: festivalId,
+            status: { $in: ['pending', 'failed', 'skipped'] }
+        }).sort({ createdAt: -1 });
+
+        if (existingScheduled) {
+            existingScheduled.festivalDate = occurrence?.date || null;
+            existingScheduled.festivalYear = occurrence?.year || null;
+            existingScheduled.selectedBaseImageId = resolvedImage.id || null;
+            existingScheduled.resolvedBaseImageUrl = resolvedImage.url || null;
+            existingScheduled.scheduledAt = scheduledAt ? new Date(scheduledAt) : new Date();
+            existingScheduled.status = 'pending';
+            existingScheduled.attempts = 0;
+            existingScheduled.platforms = {
+                facebook: { status: 'pending' },
+                instagram: { status: 'pending' }
+            };
+            existingScheduled.result = undefined;
+
+            await existingScheduled.save();
+
+            return res.json({
+                message: 'Updated existing scheduled post for this festival',
+                scheduled: existingScheduled,
+                updated: true
+            });
+        }
+
         const scheduled = new ScheduledPost({
             user: req.user._id,
             festival: festivalId,
@@ -135,7 +165,7 @@ router.post('/', auth, async (req, res) => {
         });
         await scheduled.save();
 
-        res.status(201).json({ message: 'Scheduled', scheduled });
+        res.status(201).json({ message: 'Scheduled', scheduled, updated: false });
     } catch (err) {
         console.error('Create scheduled error:', err);
         res.status(500).json({ message: 'Server error' });

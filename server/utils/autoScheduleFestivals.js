@@ -139,16 +139,11 @@ async function autoScheduleFestivalsForToday() {
             for (const entry of todaysFestivals) {
                 const { festival, occurrence, resolvedImage } = entry;
                 try {
-                    // Check if this user already has a scheduled post for this festival occurrence date.
-                    const occurrenceStart = new Date(occurrence.date);
-                    occurrenceStart.setHours(0, 0, 0, 0);
-                    const occurrenceEnd = new Date(occurrenceStart);
-                    occurrenceEnd.setDate(occurrenceEnd.getDate() + 1);
-
+                    // Enforce one active scheduled post per user per festival.
                     const existingPost = await ScheduledPost.findOne({
                         user: user._id,
                         festival: festival._id,
-                        festivalDate: { $gte: occurrenceStart, $lt: occurrenceEnd }
+                        status: { $in: ['pending', 'failed', 'skipped'] }
                     });
 
                     if (existingPost) {

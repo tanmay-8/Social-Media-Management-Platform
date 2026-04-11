@@ -5,7 +5,7 @@ const scheduledPostSchema = new mongoose.Schema({
     festival: { type: mongoose.Schema.Types.ObjectId, ref: 'Festival', required: true },
     festivalDate: { type: Date },
     festivalYear: { type: Number },
-    selectedBaseImageId: { type: mongoose.Schema.Types.ObjectId },
+    selectedBaseImageId: { type: String },
     resolvedBaseImageUrl: { type: String },
     scheduledAt: { type: Date, required: true },
     status: { type: String, enum: ['pending','posted','failed','skipped'], default: 'pending' },

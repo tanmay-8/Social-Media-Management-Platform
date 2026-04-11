@@ -1,4 +1,4 @@
-import { ArrowLeft, Calendar, CheckCircle2, Image as ImageIcon, Loader2, Check, Sparkles } from 'lucide-react';
+import { ArrowLeft, Calendar, CheckCircle2, Image as ImageIcon, Loader2, Check, Sparkles, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { festivalService } from '../services/festivalService';
@@ -14,6 +14,7 @@ export const FestivalBaseImagePage = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   useEffect(() => {
     const loadFestival = async () => {
@@ -37,11 +38,11 @@ export const FestivalBaseImagePage = () => {
         }
 
         setFestival(found);
-        if (found.defaultBaseImageId) {
-          setSelectedBaseImageId(String(found.defaultBaseImageId));
-        } else if (found.baseImages?.[0]?._id) {
-          setSelectedBaseImageId(String(found.baseImages[0]._id));
-        }
+
+        const firstBaseImage = found.baseImages?.[0];
+        const firstImageId = firstBaseImage ? String(firstBaseImage._id || firstBaseImage.public_id || '') : '';
+        const defaultId = found.defaultBaseImageId ? String(found.defaultBaseImageId) : '';
+        setSelectedBaseImageId(defaultId || firstImageId);
       } catch (loadError) {
         const message = loadError instanceof Error ? loadError.message : 'Failed to load festival';
         setError(message);
@@ -170,8 +171,22 @@ export const FestivalBaseImagePage = () => {
             <section className="rounded-2xl border border-slate-200 bg-linear-to-br from-white to-[#f8fbff] p-4">
               <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-[#669bbc]">Selected Preview</p>
               {selectedImage ? (
-                <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
-                  <img src={selectedImage.url} alt={`${festival.name} selected base`} className="h-64 w-full object-cover md:h-80" />
+                <div
+                  className="group relative overflow-hidden rounded-xl border border-slate-200 bg-slate-50"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setPreviewOpen(true)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      setPreviewOpen(true);
+                    }
+                  }}
+                >
+                  <img src={selectedImage.url} alt={`${festival.name} selected base`} className="h-64 w-full object-contain md:h-80" />
+                  <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-linear-to-t from-black/50 to-transparent p-3 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
+                    Click to view full image
+                  </div>
                 </div>
               ) : (
                 <div className="flex h-64 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-400 md:h-80">
@@ -191,7 +206,7 @@ export const FestivalBaseImagePage = () => {
                 {availableImages.map((image) => {
                   const imageId = String(image._id || image.public_id);
                   const isSelected = selectedBaseImageId === imageId;
-                  const isDefault = festival.defaultBaseImageId && String(festival.defaultBaseImageId) === imageId;
+                  const isDefault = Boolean(festival.defaultBaseImageId && String(festival.defaultBaseImageId) === imageId);
 
                   return (
                     <button
@@ -202,7 +217,7 @@ export const FestivalBaseImagePage = () => {
                         isSelected ? 'border-[#003049] ring-2 ring-[#669bbc]/45' : 'border-slate-200 hover:border-[#669bbc]'
                       }`}
                     >
-                      <img src={image.url} alt="Festival base" className="h-28 w-full object-cover" />
+                      <img src={image.url} alt="Festival base" className="h-28 w-full bg-slate-100 object-contain" />
                       <div className="absolute inset-0 bg-linear-to-t from-black/40 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
                       {isDefault && (
                         <span className="absolute left-2 top-2 rounded-full bg-white/95 px-2 py-0.5 text-[10px] font-semibold text-[#003049]">
@@ -242,6 +257,30 @@ export const FestivalBaseImagePage = () => {
           </div>
         )}
       </div>
+
+      {previewOpen && selectedImage && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+          onClick={() => setPreviewOpen(false)}
+        >
+          <div
+            className="relative max-h-[90vh] w-full max-w-5xl overflow-hidden rounded-2xl border border-white/20 bg-[#0c1b26] shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setPreviewOpen(false)}
+              className="absolute right-3 top-3 z-10 inline-flex h-9 w-9 items-center justify-center rounded-full bg-black/55 text-white transition hover:bg-black/75"
+              aria-label="Close full image preview"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <div className="flex max-h-[90vh] min-h-[60vh] items-center justify-center p-4 md:p-6">
+              <img src={selectedImage.url} alt={`${festival.name} full preview`} className="max-h-[82vh] w-full object-contain" />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
