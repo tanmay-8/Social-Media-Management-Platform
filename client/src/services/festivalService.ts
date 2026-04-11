@@ -20,20 +20,30 @@ export const festivalService = {
   // Admin only
   async createFestival(data: {
     name: string;
-    date: string;
+    date?: string;
+    yearDates?: Array<{ year: number; date: string }>;
     category: 'all' | 'hindu' | 'muslim';
     description?: string;
     baseImage?: File;
+    baseImages?: File[];
   }): Promise<{ message: string; festival: Festival }> {
     const formData = new FormData();
     formData.append('name', data.name);
-    formData.append('date', data.date);
+    if (data.date) {
+      formData.append('date', data.date);
+    }
+    if (data.yearDates && data.yearDates.length > 0) {
+      formData.append('yearDates', JSON.stringify(data.yearDates));
+    }
     formData.append('category', data.category);
     if (data.description) {
       formData.append('description', data.description);
     }
     if (data.baseImage) {
       formData.append('baseImage', data.baseImage);
+    }
+    if (data.baseImages && data.baseImages.length > 0) {
+      data.baseImages.forEach((file) => formData.append('baseImages', file));
     }
 
     return api.postFormData(API_CONFIG.ENDPOINTS.ADMIN_FESTIVALS, formData);
@@ -44,25 +54,33 @@ export const festivalService = {
     data: {
       name?: string;
       date?: string;
+      yearDates?: Array<{ year: number; date: string }>;
       category?: 'all' | 'hindu' | 'muslim';
       description?: string;
       baseImage?: File;
+      baseImages?: File[];
+      defaultBaseImageId?: string;
+      removeBaseImageIds?: string[];
     }
   ): Promise<{ message: string; festival: Festival }> {
-    // If image is provided, use FormData
-    if (data.baseImage) {
-      const formData = new FormData();
-      if (data.name) formData.append('name', data.name);
-      if (data.date) formData.append('date', data.date);
-      if (data.category) formData.append('category', data.category);
-      if (data.description) formData.append('description', data.description);
-      formData.append('baseImage', data.baseImage);
-
-      return api.putFormData(API_CONFIG.ENDPOINTS.ADMIN_FESTIVAL_BY_ID(id), formData);
+    const formData = new FormData();
+    if (data.name !== undefined) formData.append('name', data.name);
+    if (data.date !== undefined) formData.append('date', data.date);
+    if (data.yearDates !== undefined) formData.append('yearDates', JSON.stringify(data.yearDates));
+    if (data.category !== undefined) formData.append('category', data.category);
+    if (data.description !== undefined) formData.append('description', data.description);
+    if (data.defaultBaseImageId !== undefined) {
+      formData.append('defaultBaseImageId', data.defaultBaseImageId);
+    }
+    if (data.removeBaseImageIds && data.removeBaseImageIds.length > 0) {
+      formData.append('removeBaseImageIds', JSON.stringify(data.removeBaseImageIds));
+    }
+    if (data.baseImage) formData.append('baseImage', data.baseImage);
+    if (data.baseImages && data.baseImages.length > 0) {
+      data.baseImages.forEach((file) => formData.append('baseImages', file));
     }
 
-    // Otherwise use JSON
-    return api.put(API_CONFIG.ENDPOINTS.ADMIN_FESTIVAL_BY_ID(id), data);
+    return api.putFormData(API_CONFIG.ENDPOINTS.ADMIN_FESTIVAL_BY_ID(id), formData);
   },
 
   async deleteFestival(id: string): Promise<{ message: string }> {

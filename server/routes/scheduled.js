@@ -4,6 +4,11 @@ const ScheduledPost = require('../models/ScheduledPost');
 const Festival = require('../models/Festival');
 const User = require('../models/User');
 const { composeAndUpload } = require('../utils/composer');
+const {
+    findOccurrenceByDate,
+    findNextOccurrence,
+    resolveFestivalBaseImage,
+} = require('../utils/festivalHelpers');
 
 const router = express.Router();
 
@@ -92,7 +97,7 @@ router.get('/posted', auth, async (req, res) => {
  */
 router.post('/', auth, async (req, res) => {
     try {
-        const { festivalId, scheduledAt } = req.body;
+        const { festivalId, scheduledAt, festivalDate, selectedBaseImageId } = req.body;
         const festival = await Festival.findById(festivalId);
         if (!festival) return res.status(404).json({ message: 'Festival not found' });
 
@@ -102,9 +107,25 @@ router.post('/', auth, async (req, res) => {
         // Require active subscription to schedule
         if (!user.subscription?.isActive) return res.status(403).json({ message: 'Subscription inactive' });
 
+        let occurrence = null;
+        if (festivalDate) {
+            occurrence = findOccurrenceByDate(festival, festivalDate);
+            if (!occurrence) {
+                return res.status(400).json({ message: 'Selected festival date is invalid for this festival' });
+            }
+        } else {
+            occurrence = findNextOccurrence(festival, new Date());
+        }
+
+        const resolvedImage = resolveFestivalBaseImage(festival, selectedBaseImageId);
+
         const scheduled = new ScheduledPost({
             user: req.user._id,
             festival: festivalId,
+            festivalDate: occurrence?.date || null,
+            festivalYear: occurrence?.year || null,
+            selectedBaseImageId: resolvedImage.id || null,
+            resolvedBaseImageUrl: resolvedImage.url || null,
             scheduledAt: scheduledAt ? new Date(scheduledAt) : new Date(),
             status: 'pending',
             platforms: {
@@ -138,10 +159,22 @@ router.post('/:id/process', auth, async (req, res) => {
         const user = await User.findById(req.user._id);
         if (!user.profile?.footerImage?.url) return res.status(400).json({ message: 'No footer image found for user' });
 
+        const resolvedImage = scheduled.resolvedBaseImageUrl
+            ? {
+                  url: scheduled.resolvedBaseImageUrl,
+                  id: scheduled.selectedBaseImageId || null,
+              }
+            : resolveFestivalBaseImage(scheduled.festival, scheduled.selectedBaseImageId);
+
+        if (!resolvedImage.url) {
+            return res.status(400).json({ message: 'Festival has no base image configured' });
+        }
+
         // compose and upload
-        const result = await composeAndUpload(scheduled.festival.baseImage.url, user.profile.footerImage.url);
+        const result = await composeAndUpload(resolvedImage.url, user.profile.footerImage.url);
 
         scheduled.status = 'posted';
+        scheduled.resolvedBaseImageUrl = resolvedImage.url;
         scheduled.result = { composed: result };
         await scheduled.save();
 

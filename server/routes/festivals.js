@@ -1,5 +1,7 @@
 const express = require('express');
 const auth = require('../middleware/auth');
+const Festival = require('../models/Festival');
+const { normalizeYearDates, toFestivalResponse } = require('../utils/festivalHelpers');
 const router = express.Router();
 
 // @route   GET /api/festivals
@@ -7,33 +9,41 @@ const router = express.Router();
 // @access  Private
 router.get('/', auth, async (req, res) => {
     try {
-        const Festival = require('../models/Festival');
-        
-        // Build query
-        const query = {};
-        
-        // Filter by year if provided
-        if (req.query.year) {
-            query.year = parseInt(req.query.year);
-        }
-        
-        // Get all festivals matching criteria
-        const allFestivals = await Festival.find(query).sort({ date: 1 });
-        
-        // Filter for today and future festivals only
+        const requestedYear = req.query.year ? parseInt(req.query.year, 10) : null;
+        const allFestivals = await Festival.find({}).sort({ createdAt: -1 });
+
+        // Filter for today and future festivals only (using normalized year-dates).
         const now = new Date();
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        
-        const festivals = allFestivals.filter(festival => {
-            const festivalDate = new Date(festival.date);
-            const festivalDateOnly = new Date(festivalDate.getFullYear(), festivalDate.getMonth(), festivalDate.getDate());
-            return festivalDateOnly >= today;
-        });
+
+        const festivals = allFestivals
+            .filter((festival) => {
+                const entries = normalizeYearDates(festival);
+                if (entries.length === 0) {
+                    return false;
+                }
+
+                if (requestedYear && !entries.some((entry) => entry.year === requestedYear)) {
+                    return false;
+                }
+
+                return entries.some((entry) => {
+                    const dateOnly = new Date(entry.date);
+                    dateOnly.setHours(0, 0, 0, 0);
+                    return dateOnly >= today;
+                });
+            })
+            .map((festival) => toFestivalResponse(festival, today))
+            .sort((left, right) => {
+                const leftDate = left.date ? new Date(left.date).getTime() : Number.MAX_SAFE_INTEGER;
+                const rightDate = right.date ? new Date(right.date).getTime() : Number.MAX_SAFE_INTEGER;
+                return leftDate - rightDate;
+            });
         
         res.json({
             festivals,
             category: 'all',
-            year: req.query.year ? parseInt(req.query.year) : 'all',
+            year: requestedYear || 'all',
             count: festivals.length
         });
     } catch (error) {

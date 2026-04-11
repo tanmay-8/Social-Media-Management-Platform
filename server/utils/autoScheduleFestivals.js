@@ -2,6 +2,7 @@ const cron = require('node-cron');
 const Festival = require('../models/Festival');
 const User = require('../models/User');
 const ScheduledPost = require('../models/ScheduledPost');
+const { normalizeYearDates, resolveFestivalBaseImage } = require('./festivalHelpers');
 
 /**
  * Auto-schedule festivals for all subscribed users
@@ -60,22 +61,35 @@ async function autoScheduleFestivalsForToday() {
         const today = getTodayDate();
         console.log(`📅 Looking for festivals on ${today.year}-${today.month}-${today.day}`);
         
-        // Find all festivals for this year
-        const festivals = await Festival.find({
-            year: today.year
-        });
-        
-        // Filter festivals that match today's date (direct date comparison)
-        const todaysFestivals = festivals.filter(festival => {
-            const festivalDate = new Date(festival.date);
-            return festivalDate.getFullYear() === today.year &&
-                   festivalDate.getMonth() + 1 === today.month &&
-                   festivalDate.getDate() === today.day;
-        });
+        // Find festivals and match against configured yearDates (legacy date supported by helper).
+        const festivals = await Festival.find({});
+        const todaysFestivals = festivals
+            .map((festival) => {
+                const matchingOccurrence = normalizeYearDates(festival).find((entry) => {
+                    return (
+                        entry.year === today.year &&
+                        entry.date.getMonth() + 1 === today.month &&
+                        entry.date.getDate() === today.day
+                    );
+                });
+
+                if (!matchingOccurrence) {
+                    return null;
+                }
+
+                const resolvedImage = resolveFestivalBaseImage(festival);
+
+                return {
+                    festival,
+                    occurrence: matchingOccurrence,
+                    resolvedImage,
+                };
+            })
+            .filter(Boolean);
         
         console.log(`\n✨ Found ${todaysFestivals.length} festival(s) today:`);
-        todaysFestivals.forEach(f => {
-            console.log(`   📍 ${f.name} (${f.category || 'general'})`);
+        todaysFestivals.forEach(({ festival, occurrence }) => {
+            console.log(`   📍 ${festival.name} (${festival.category || 'general'}) - ${occurrence.year}`);
         });
         
         if (todaysFestivals.length === 0) {
@@ -122,38 +136,45 @@ async function autoScheduleFestivalsForToday() {
             console.log(`   🎯 Festivals to schedule: ${todaysFestivals.length}`);
 
             // For each festival, check if already scheduled
-            for (const festival of todaysFestivals) {
+            for (const entry of todaysFestivals) {
+                const { festival, occurrence, resolvedImage } = entry;
                 try {
-                    // Check if this user already has a scheduled post for this festival today
-                    // Get all scheduled posts for this user and festival
-                    const existingPosts = await ScheduledPost.find({
+                    // Check if this user already has a scheduled post for this festival occurrence date.
+                    const occurrenceStart = new Date(occurrence.date);
+                    occurrenceStart.setHours(0, 0, 0, 0);
+                    const occurrenceEnd = new Date(occurrenceStart);
+                    occurrenceEnd.setDate(occurrenceEnd.getDate() + 1);
+
+                    const existingPost = await ScheduledPost.findOne({
                         user: user._id,
-                        festival: festival._id
+                        festival: festival._id,
+                        festivalDate: { $gte: occurrenceStart, $lt: occurrenceEnd }
                     });
-                    
-                    // Check if any of them are scheduled for today
-                    const alreadyScheduledToday = existingPosts.some(post => {
-                        const postDate = new Date(post.scheduledAt);
-                        return postDate.getFullYear() === today.year &&
-                               postDate.getMonth() + 1 === today.month &&
-                               postDate.getDate() === today.day;
-                    });
-                    
-                    if (alreadyScheduledToday) {
+
+                    if (existingPost) {
                         console.log(`      ⏭️  ${festival.name} - Already scheduled`);
                         userStats.skipped.push(`${festival.name} - Already scheduled`);
                         stats.skipped++;
                         continue;
                     }
                     
-                    // Create scheduled post for today at 7:00 AM IST
+                    // Create scheduled post for today at 7:00 AM IST + spread offset
                     // The scheduledAt time will be used by the auto-posting scheduler
                     const postTime = getISTTime();
                     postTime.setHours(7, 0, 0, 0); // 7:00 AM IST
                     
+                    const randomOffset = Math.floor(Math.random() * 30); // 0–30 min
+                    const userOffset = user._id.toString().charCodeAt(0) % 30;
+                    
+                    postTime.setMinutes(postTime.getMinutes() + randomOffset + userOffset);
+                    
                     const scheduledPost = new ScheduledPost({
                         user: user._id,
                         festival: festival._id,
+                        festivalDate: occurrence.date,
+                        festivalYear: occurrence.year,
+                        selectedBaseImageId: resolvedImage.id || null,
+                        resolvedBaseImageUrl: resolvedImage.url || null,
                         scheduledAt: postTime,
                         status: 'pending',
                         attempts: 0,
@@ -165,8 +186,8 @@ async function autoScheduleFestivalsForToday() {
                     
                     await scheduledPost.save();
                     
-                    console.log(`      ✅ ${festival.name} - Scheduled for 7:00 AM`);
-                    userStats.scheduled.push(`${festival.name} - 7:00 AM`);
+                    console.log(`      ✅ ${festival.name} - Scheduled at ${postTime.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata' })}`);
+                    userStats.scheduled.push(`${festival.name} - ${postTime.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata' })}`);
                     stats.created++;
                     
                 } catch (err) {

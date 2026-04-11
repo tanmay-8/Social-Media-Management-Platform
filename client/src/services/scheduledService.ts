@@ -5,12 +5,16 @@ export interface ScheduledPost {
   festival: {
     _id: string;
     name: string;
-    date: string;
+    date?: string;
   };
-  scheduledDate: string;
+  festivalDate?: string;
+  festivalYear?: number;
+  selectedBaseImageId?: string;
+  resolvedBaseImageUrl?: string;
+  scheduledAt: string;
   message: string;
   composedImageUrl?: string;
-  status: 'pending' | 'processed' | 'failed';
+  status: 'pending' | 'processed' | 'failed' | 'posted' | 'skipped';
   createdAt: string;
 }
 
@@ -44,7 +48,9 @@ export interface PostedPost {
 
 export interface CreateScheduledPost {
   festivalId: string;
-  scheduledDate: string;
+  festivalDate?: string;
+  selectedBaseImageId?: string;
+  scheduledAt?: string;
   message: string;
   imageUrl?: string;
 }

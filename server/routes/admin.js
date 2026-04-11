@@ -8,9 +8,80 @@ const Festival = require('../models/Festival');
 const ScheduledPost = require('../models/ScheduledPost');
 const auth = require('../middleware/auth');
 const requireAdmin = require('../middleware/requireAdmin');
+const {
+    normalizeYearDates,
+    resolveFestivalBaseImage,
+    toFestivalResponse,
+} = require('../utils/festivalHelpers');
 
 const router = express.Router();
 const upload = multer({ dest: path.join(__dirname, '../tmp') });
+const festivalUpload = upload.fields([
+    { name: 'baseImage', maxCount: 1 },
+    { name: 'baseImages', maxCount: 10 },
+]);
+
+function parseYearDatesInput(rawYearDates, legacyDate) {
+    const parsed = [];
+
+    if (rawYearDates) {
+        let source = rawYearDates;
+        if (typeof source === 'string') {
+            try {
+                source = JSON.parse(source);
+            } catch (error) {
+                throw new Error('Invalid yearDates format');
+            }
+        }
+
+        if (!Array.isArray(source)) {
+            throw new Error('yearDates must be an array');
+        }
+
+        source.forEach((entry) => {
+            const year = Number(entry?.year);
+            const date = new Date(entry?.date);
+            if (!Number.isFinite(year) || Number.isNaN(date.getTime())) {
+                throw new Error('Each yearDates entry must include valid year and date');
+            }
+
+            parsed.push({ year, date });
+        });
+    }
+
+    if (parsed.length === 0 && legacyDate) {
+        const legacy = new Date(legacyDate);
+        if (!Number.isNaN(legacy.getTime())) {
+            parsed.push({ year: legacy.getFullYear(), date: legacy });
+        }
+    }
+
+    const dedupedMap = new Map();
+    parsed.forEach((entry) => {
+        dedupedMap.set(entry.year, entry);
+    });
+
+    return Array.from(dedupedMap.values()).sort((left, right) => left.date.getTime() - right.date.getTime());
+}
+
+function getFestivalFiles(req) {
+    const files = req.files || {};
+    const primary = files.baseImage || [];
+    const extra = files.baseImages || [];
+    return [...primary, ...extra];
+}
+
+async function cleanupUploadedFiles(files) {
+    files.forEach((file) => {
+        try {
+            if (file?.path && fs.existsSync(file.path)) {
+                fs.unlinkSync(file.path);
+            }
+        } catch (error) {
+            console.warn('File cleanup warning:', error.message);
+        }
+    });
+}
 
 /**
  * @swagger
@@ -237,7 +308,17 @@ router.post('/users/:id/footer', auth, requireAdmin, upload.single('footer'), as
 // Get all festivals for admin (no date filtering)
 router.get('/festivals', auth, requireAdmin, async (req, res) => {
     try {
-        const festivals = await Festival.find().sort({ date: 1, createdAt: -1 });
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
+
+        const festivals = (await Festival.find().sort({ createdAt: -1 }))
+            .map((festival) => toFestivalResponse(festival, now))
+            .sort((left, right) => {
+                const leftDate = left.date ? new Date(left.date).getTime() : Number.MAX_SAFE_INTEGER;
+                const rightDate = right.date ? new Date(right.date).getTime() : Number.MAX_SAFE_INTEGER;
+                return leftDate - rightDate;
+            });
+
         res.json({ festivals });
     } catch (err) {
         console.error('Get admin festivals error:', err);
@@ -278,118 +359,151 @@ router.get('/festivals', auth, requireAdmin, async (req, res) => {
  *       201:
  *         description: Festival created
  */
-// Create festival with base image
-router.post('/festivals', auth, requireAdmin, upload.single('baseImage'), async (req, res) => {
+// Create festival (supports creating metadata first, then adding dates/images later)
+router.post('/festivals', auth, requireAdmin, festivalUpload, async (req, res) => {
     try {
-        const { name, date, category, description } = req.body;
-        if (!name || !date) return res.status(400).json({ message: 'Name/date required' });
-
-        if (!req.file) {
-            return res.status(400).json({ message: 'Base image is required' });
+        const { name, date, category, description, yearDates } = req.body;
+        if (!name || !String(name).trim()) {
+            return res.status(400).json({ message: 'Name is required' });
         }
 
-        const filePath = req.file.path;
-        const stream = fs.createReadStream(filePath);
-        const result = await uploadStream(stream, { folder: 'festivals' });
-        fs.unlinkSync(filePath);
+        const files = getFestivalFiles(req);
+        const uploadedImages = [];
 
-        const festivalDate = new Date(date);
-        const year = festivalDate.getFullYear();
+        for (const file of files) {
+            const stream = fs.createReadStream(file.path);
+            const result = await uploadStream(stream, { folder: 'festivals' });
+            uploadedImages.push({ url: result.secure_url, public_id: result.public_id });
+        }
+
+        await cleanupUploadedFiles(files);
+
+        const parsedYearDates = parseYearDatesInput(yearDates, date);
+        const primaryOccurrence = parsedYearDates[0] || null;
 
         const festival = new Festival({
-            name,
-            date: festivalDate,
-            year,
+            name: String(name).trim(),
+            date: primaryOccurrence?.date || undefined,
+            year: primaryOccurrence?.year || undefined,
+            yearDates: parsedYearDates,
             category: category || 'all',
             description: description || '',
-            baseImage: { url: result.secure_url, public_id: result.public_id }
+            baseImage: uploadedImages[0] || undefined,
+            baseImages: uploadedImages,
         });
+        if (festival.baseImages.length > 0) {
+            festival.defaultBaseImageId = festival.baseImages[0]._id;
+        }
         await festival.save();
 
-        res.status(201).json({ message: 'Festival created', festival });
+        res.status(201).json({ message: 'Festival created', festival: toFestivalResponse(festival) });
     } catch (err) {
+        await cleanupUploadedFiles(getFestivalFiles(req));
         console.error('Create festival error:', err);
-        res.status(500).json({ message: 'Failed to create festival' });
+        res.status(500).json({ message: err.message || 'Failed to create festival' });
     }
 });
 
-/**
- * @swagger
- * /api/admin/festivals/{id}:
- *   put:
- *     summary: Update festival (admin)
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     requestBody:
- *       content:
- *         multipart/form-data:
- *           schema:
- *             type: object
- *             properties:
- *               name:
- *                 type: string
- *               date:
- *                 type: string
- *               category:
- *                 type: string
- *               description:
- *                 type: string
- *               baseImage:
- *                 type: file
- *     responses:
- *       200:
- *         description: Festival updated
- */
-// Update festival with optional base image
-router.put('/festivals/:id', auth, requireAdmin, upload.single('baseImage'), async (req, res) => {
+// Update festival with dates/images/default image controls
+router.put('/festivals/:id', auth, requireAdmin, festivalUpload, async (req, res) => {
     try {
-        const { name, date, category, description } = req.body;
+        const {
+            name,
+            date,
+            category,
+            description,
+            yearDates,
+            defaultBaseImageId,
+            removeBaseImageIds,
+        } = req.body;
         const festival = await Festival.findById(req.params.id);
-        
+
         if (!festival) {
             return res.status(404).json({ message: 'Festival not found' });
         }
 
-        if (name) festival.name = name;
-        if (date) {
-            festival.date = new Date(date);
-            festival.year = festival.date.getFullYear();
-        }
+        if (name !== undefined) festival.name = String(name).trim();
         if (category) festival.category = category;
         if (description !== undefined) festival.description = description;
 
-        // Handle image upload if provided
-        if (req.file) {
-            // Delete old image from Cloudinary if it exists
-            if (festival.baseImage?.public_id) {
-                try {
-                    await cloudinary.uploader.destroy(festival.baseImage.public_id);
-                } catch (deleteErr) {
-                    console.error('Error deleting old image:', deleteErr);
+        if (yearDates !== undefined || date !== undefined) {
+            const parsedYearDates = parseYearDatesInput(yearDates, date || festival.date);
+            festival.yearDates = parsedYearDates;
+
+            const primaryOccurrence = parsedYearDates[0] || null;
+            festival.date = primaryOccurrence?.date || undefined;
+            festival.year = primaryOccurrence?.year || undefined;
+        }
+
+        const removeIds = removeBaseImageIds
+            ? (typeof removeBaseImageIds === 'string' ? JSON.parse(removeBaseImageIds) : removeBaseImageIds)
+            : [];
+
+        if (Array.isArray(removeIds) && removeIds.length > 0) {
+            const idsToRemove = new Set(removeIds.map((id) => String(id)));
+            const currentImages = Array.isArray(festival.baseImages) ? festival.baseImages : [];
+
+            for (const image of currentImages) {
+                if (idsToRemove.has(String(image._id)) && image.public_id) {
+                    try {
+                        await cloudinary.uploader.destroy(image.public_id);
+                    } catch (deleteErr) {
+                        console.error('Error deleting old image:', deleteErr);
+                    }
                 }
             }
 
-            // Upload new image
-            const filePath = req.file.path;
-            const stream = fs.createReadStream(filePath);
-            const result = await uploadStream(stream, { folder: 'festivals' });
-            fs.unlinkSync(filePath);
+            festival.baseImages = currentImages.filter((image) => !idsToRemove.has(String(image._id)));
+        }
 
-            festival.baseImage = { url: result.secure_url, public_id: result.public_id };
+        const files = getFestivalFiles(req);
+        for (const file of files) {
+            const stream = fs.createReadStream(file.path);
+            const result = await uploadStream(stream, { folder: 'festivals' });
+            festival.baseImages.push({ url: result.secure_url, public_id: result.public_id });
+        }
+        await cleanupUploadedFiles(files);
+
+        if (festival.baseImages.length > 0) {
+            if (defaultBaseImageId) {
+                const found = festival.baseImages.find((image) => String(image._id) === String(defaultBaseImageId));
+                if (!found) {
+                    return res.status(400).json({ message: 'Invalid default base image id' });
+                }
+                festival.defaultBaseImageId = found._id;
+            } else if (!festival.defaultBaseImageId) {
+                festival.defaultBaseImageId = festival.baseImages[0]._id;
+            }
+
+            const resolvedImage = resolveFestivalBaseImage(festival, festival.defaultBaseImageId);
+            if (resolvedImage.url) {
+                festival.baseImage = {
+                    url: resolvedImage.url,
+                    public_id: resolvedImage.public_id,
+                };
+            }
+        } else {
+            festival.defaultBaseImageId = undefined;
+            if (!festival.baseImage?.url) {
+                festival.baseImage = undefined;
+            }
+        }
+
+        if (Array.isArray(festival.yearDates) && festival.yearDates.length > 0) {
+            const sorted = normalizeYearDates(festival);
+            festival.date = sorted[0].date;
+            festival.year = sorted[0].year;
+        } else if (festival.date) {
+            festival.year = new Date(festival.date).getFullYear();
         }
 
         await festival.save();
-        
-        res.json({ message: 'Festival updated successfully', festival });
+
+        res.json({ message: 'Festival updated successfully', festival: toFestivalResponse(festival) });
     } catch (err) {
+        await cleanupUploadedFiles(getFestivalFiles(req));
         console.error('Update festival error:', err);
-        res.status(500).json({ message: 'Failed to update festival' });
+        res.status(500).json({ message: err.message || 'Failed to update festival' });
     }
 });
 
@@ -419,10 +533,23 @@ router.delete('/festivals/:id', auth, requireAdmin, async (req, res) => {
             return res.status(404).json({ message: 'Festival not found' });
         }
 
-        // Delete from cloudinary if exists
-        if (festival.baseImage && festival.baseImage.public_id) {
+        const imagesToDelete = [];
+        if (festival.baseImage?.public_id) {
+            imagesToDelete.push(festival.baseImage.public_id);
+        }
+
+        if (Array.isArray(festival.baseImages)) {
+            festival.baseImages.forEach((image) => {
+                if (image.public_id) {
+                    imagesToDelete.push(image.public_id);
+                }
+            });
+        }
+
+        const uniquePublicIds = [...new Set(imagesToDelete)];
+        for (const publicId of uniquePublicIds) {
             try {
-                await cloudinary.uploader.destroy(festival.baseImage.public_id);
+                await cloudinary.uploader.destroy(publicId);
             } catch (cloudErr) {
                 console.warn('Cloudinary deletion warning:', cloudErr);
             }
@@ -436,7 +563,6 @@ router.delete('/festivals/:id', auth, requireAdmin, async (req, res) => {
         res.status(500).json({ message: 'Failed to delete festival' });
     }
 });
-
 /**
  * @swagger
  * /api/admin/users/{id}:
@@ -661,8 +787,6 @@ router.post('/trigger-post-scheduler', auth, requireAdmin, async (req, res) => {
     }
 });
 
-module.exports = router;
-
 /**
  * @swagger
  * /api/admin/import-festivals:
@@ -702,16 +826,46 @@ router.post('/import-festivals', auth, requireAdmin, upload.single('file'), asyn
             return res.status(400).json({ message: 'JSON must contain an array of festivals' });
         }
 
-        // Transform JSON data to match Festival model
-        const festivals = festivalsData.map(festival => ({
-            name: festival.name,
-            date: new Date(festival.date),
-            year: festival.year || new Date(festival.date).getFullYear(),
-            category: festival.category || 'all',
-            isRecurring: festival.isRecurring !== undefined ? festival.isRecurring : true,
-            baseImage: festival.baseImage || { url: null, public_id: null },
-            description: festival.description || ''
-        }));
+        // Transform JSON data to match Festival model.
+        const festivals = festivalsData.map((festival) => {
+            const yearDates = Array.isArray(festival.yearDates)
+                ? festival.yearDates
+                    .map((entry) => ({
+                        year: Number(entry.year),
+                        date: new Date(entry.date),
+                    }))
+                    .filter((entry) => Number.isFinite(entry.year) && !Number.isNaN(entry.date.getTime()))
+                : [];
+
+            if (yearDates.length === 0 && festival.date) {
+                const fallbackDate = new Date(festival.date);
+                if (!Number.isNaN(fallbackDate.getTime())) {
+                    yearDates.push({
+                        year: festival.year || fallbackDate.getFullYear(),
+                        date: fallbackDate,
+                    });
+                }
+            }
+
+            const baseImages = Array.isArray(festival.baseImages)
+                ? festival.baseImages.filter((image) => image?.url && image?.public_id)
+                : festival.baseImage?.url && festival.baseImage?.public_id
+                    ? [festival.baseImage]
+                    : [];
+
+            return {
+                name: festival.name,
+                date: yearDates[0]?.date,
+                year: yearDates[0]?.year,
+                yearDates,
+                category: festival.category || 'all',
+                isRecurring: festival.isRecurring !== undefined ? festival.isRecurring : true,
+                baseImage: baseImages[0] || festival.baseImage || undefined,
+                baseImages,
+                defaultBaseImageId: festival.defaultBaseImageId || null,
+                description: festival.description || ''
+            };
+        });
 
         // cleanup file
         fs.unlinkSync(filePath);
@@ -739,3 +893,5 @@ router.post('/import-festivals', auth, requireAdmin, upload.single('file'), asyn
         res.status(500).json({ message: 'Import failed' });
     }
 });
+
+module.exports = router;

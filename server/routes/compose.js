@@ -4,6 +4,7 @@ const User = require('../models/User');
 const Festival = require('../models/Festival');
 const { composeAndUpload } = require('../utils/composer');
 const { postToFacebook } = require('../utils/facebookAPI');
+const { resolveFestivalBaseImage } = require('../utils/festivalHelpers');
 
 const router = express.Router();
 
@@ -32,7 +33,7 @@ const router = express.Router();
 // Protected: combines the festival base image with logged-in user's footer image and uploads to Cloudinary
 router.post('/test', auth, async (req, res) => {
     try {
-        const { festivalId } = req.body;
+        const { festivalId, selectedBaseImageId } = req.body;
         const user = await User.findById(req.user._id);
         if (!user) return res.status(404).json({ message: 'User not found' });
 
@@ -40,10 +41,11 @@ router.post('/test', auth, async (req, res) => {
         if (!festival) return res.status(404).json({ message: 'Festival not found' });
 
         if (!user.profile?.footerImage?.url) return res.status(400).json({ message: 'User has no footer image' });
-        if (!festival.baseImage?.url) return res.status(400).json({ message: 'Festival has no base image' });
+        const resolvedImage = resolveFestivalBaseImage(festival, selectedBaseImageId);
+        if (!resolvedImage.url) return res.status(400).json({ message: 'Festival has no base image' });
 
         const result = await composeAndUpload(
-            festival.baseImage.url,
+            resolvedImage.url,
             user.profile.footerImage.url
         );
 
@@ -61,7 +63,7 @@ router.post('/test', auth, async (req, res) => {
  */
 router.post('/post-now', auth, async (req, res) => {
     try {
-        const { festivalId } = req.body;
+        const { festivalId, selectedBaseImageId } = req.body;
         
         if (!festivalId) {
             return res.status(400).json({ message: 'Festival ID is required' });
@@ -92,8 +94,10 @@ router.post('/post-now', auth, async (req, res) => {
             return res.status(400).json({ message: 'Footer image not set' });
         }
 
+        const resolvedImage = resolveFestivalBaseImage(festival, selectedBaseImageId);
+
         // Check if festival has base image
-        if (!festival.baseImage?.url) {
+        if (!resolvedImage.url) {
             return res.status(400).json({ message: 'Festival base image not available' });
         }
 
@@ -101,7 +105,7 @@ router.post('/post-now', auth, async (req, res) => {
         
         // Compose the image
         const composedResult = await composeAndUpload(
-            festival.baseImage.url,
+            resolvedImage.url,
             user.profile.footerImage.url
         );
 

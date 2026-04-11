@@ -33,9 +33,20 @@ export interface User {
 export interface Festival {
   _id: string;
   name: string;
-  date: string;
+  date?: string;
+  year?: number;
+  yearDates?: Array<{
+    year: number;
+    date: string;
+  }>;
   category: 'all' | 'hindu' | 'muslim';
   description?: string;
+  defaultBaseImageId?: string;
+  baseImages?: Array<{
+    _id?: string;
+    url: string;
+    public_id: string;
+  }>;
   baseImage?: {
     url: string;
     public_id: string;

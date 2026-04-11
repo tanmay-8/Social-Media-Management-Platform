@@ -1,10 +1,11 @@
 import { useAppStore, type AppState } from '../store';
 import { Calendar, Loader2, Clock, AlertCircle, Download, CheckCircle2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { type ChangeEvent, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { festivalService } from '../services/festivalService';
 import { scheduledService, type PostedPost } from '../services/scheduledService';
 import { subscriptionService } from '../services/subscriptionService';
+import { composeService } from '../services/composeService';
 import type { Festival } from '../types';
 
 export const HomePage = () => {
@@ -18,6 +19,12 @@ export const HomePage = () => {
   const [error, setError] = useState<string | null>(null);
   const [setupMessage, setSetupMessage] = useState<string | null>(null);
   const [downloadingPostId, setDownloadingPostId] = useState<string | null>(null);
+  const [selectedFestivalId, setSelectedFestivalId] = useState<string>('');
+  const [selectedFestivalDate, setSelectedFestivalDate] = useState<string>('');
+  const [selectedBaseImageId, setSelectedBaseImageId] = useState<string>('');
+  const [scheduledAt, setScheduledAt] = useState<string>('');
+  const [actionLoading, setActionLoading] = useState(false);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
 
   useEffect(() => {
     checkUserSetup();
@@ -129,6 +136,102 @@ export const HomePage = () => {
     return new Date(a.date).getTime() - new Date(b.date).getTime();
   });
 
+  const selectedFestival = festivals.find((festival: Festival) => festival._id === selectedFestivalId) || null;
+  const selectedFestivalDates = selectedFestival?.yearDates?.length
+    ? selectedFestival.yearDates
+    : selectedFestival?.date
+      ? [{ year: selectedFestival.year || new Date(selectedFestival.date).getFullYear(), date: selectedFestival.date }]
+      : [];
+
+  const selectedFestivalImages = selectedFestival?.baseImages?.length
+    ? selectedFestival.baseImages
+    : selectedFestival?.baseImage?.url
+      ? [{ _id: selectedFestival.defaultBaseImageId, url: selectedFestival.baseImage.url, public_id: selectedFestival.baseImage.public_id }]
+      : [];
+
+  const resolvedImagePreview = selectedFestivalImages.find((image: { _id?: string; url: string; public_id: string }) => String(image._id || '') === selectedBaseImageId)
+    || selectedFestivalImages.find((image: { _id?: string; url: string; public_id: string }) => String(image._id || '') === String(selectedFestival?.defaultBaseImageId || ''))
+    || selectedFestivalImages[0]
+    || null;
+
+  const handleFestivalChange = (festivalId: string) => {
+    setSelectedFestivalId(festivalId);
+    setActionMessage(null);
+    const festival = festivals.find((f: Festival) => f._id === festivalId);
+    if (!festival) {
+      setSelectedFestivalDate('');
+      setSelectedBaseImageId('');
+      return;
+    }
+
+    const firstDate = festival.yearDates?.[0]?.date || festival.date || '';
+    setSelectedFestivalDate(firstDate);
+
+    const defaultImageId = String(festival.defaultBaseImageId || '');
+    if (defaultImageId) {
+      setSelectedBaseImageId(defaultImageId);
+    } else {
+      const firstImage = festival.baseImages?.[0]?._id;
+      setSelectedBaseImageId(firstImage ? String(firstImage) : '');
+    }
+  };
+
+  const handlePostNow = async () => {
+    if (!selectedFestivalId) {
+      setError('Please select a festival first');
+      return;
+    }
+
+    setActionLoading(true);
+    setError(null);
+    setActionMessage(null);
+
+    try {
+      await composeService.postNow({
+        festivalId: selectedFestivalId,
+        selectedBaseImageId: selectedBaseImageId || undefined,
+      });
+
+      setActionMessage('Festival posted successfully');
+      await fetchData();
+    } catch (postError) {
+      const message = postError instanceof Error ? postError.message : 'Failed to post now';
+      setError(message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleSchedulePost = async () => {
+    if (!selectedFestivalId) {
+      setError('Please select a festival first');
+      return;
+    }
+
+    setActionLoading(true);
+    setError(null);
+    setActionMessage(null);
+
+    try {
+      const schedulePayload = {
+        festivalId: selectedFestivalId,
+        festivalDate: selectedFestivalDate || undefined,
+        selectedBaseImageId: selectedBaseImageId || undefined,
+        scheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : undefined,
+        message: '',
+      };
+
+      await scheduledService.createScheduledPost(schedulePayload);
+      setActionMessage('Post scheduled successfully');
+      setScheduledAt('');
+    } catch (scheduleError) {
+      const message = scheduleError instanceof Error ? scheduleError.message : 'Failed to schedule post';
+      setError(message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-[calc(100vh-120px)] items-center justify-center">
@@ -176,6 +279,121 @@ export const HomePage = () => {
       </div>
 
       <div className="grid gap-6">
+        <section className="rounded-3xl border border-white/40 bg-white/90 p-6 shadow-elegant backdrop-blur-sm">
+          <div className="mb-6 flex items-center gap-3 border-b border-gray-100 pb-4">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#c1121f] to-[#780000] text-white shadow-md">
+              <Calendar className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="m-0 text-xl font-bold text-[#003049]">Manual Compose And Post</h3>
+              <p className="m-0 text-xs text-gray-500">Select festival, date, and base image</p>
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-[#003049]">Festival</label>
+              <select
+                value={selectedFestivalId}
+                onChange={(e: ChangeEvent<HTMLSelectElement>) => handleFestivalChange(e.target.value)}
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[#669bbc] focus:outline-none focus:ring-2 focus:ring-[#669bbc]/30"
+              >
+                <option value="">Select festival</option>
+                {festivals.map((festival) => (
+                  <option key={festival._id} value={festival._id}>
+                    {festival.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-1 block text-sm font-medium text-[#003049]">Festival Date</label>
+              <select
+                value={selectedFestivalDate}
+                onChange={(e: ChangeEvent<HTMLSelectElement>) => setSelectedFestivalDate(e.target.value)}
+                disabled={!selectedFestival}
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[#669bbc] focus:outline-none focus:ring-2 focus:ring-[#669bbc]/30 disabled:bg-gray-100"
+              >
+                <option value="">Select date</option>
+                {selectedFestivalDates.map((entry) => (
+                  <option key={`${entry.year}-${entry.date}`} value={entry.date}>
+                    {new Date(entry.date).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    })}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="mb-2 block text-sm font-medium text-[#003049]">Base Image (optional)</label>
+              {selectedFestivalImages.length > 0 ? (
+                <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                  {selectedFestivalImages.map((image) => {
+                    const imageId = String(image._id || '');
+                    const isSelected = selectedBaseImageId === imageId;
+                    return (
+                      <button
+                        key={`${image.public_id}-${imageId}`}
+                        type="button"
+                        onClick={() => setSelectedBaseImageId(imageId)}
+                        className={`overflow-hidden rounded-xl border text-left transition ${
+                          isSelected ? 'border-[#003049] ring-2 ring-[#669bbc]/40' : 'border-slate-200 hover:border-[#669bbc]'
+                        }`}
+                      >
+                        <img src={image.url} alt="Festival template" className="h-24 w-full object-cover" />
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500">No base images configured for this festival yet.</p>
+              )}
+            </div>
+
+            {resolvedImagePreview?.url && (
+              <div className="md:col-span-2 rounded-xl border border-slate-200 p-3">
+                <p className="mb-2 text-xs font-medium text-[#003049]">Resolved image preview (selected/default)</p>
+                <img src={resolvedImagePreview.url} alt="Resolved festival image" className="h-36 w-full rounded-lg object-cover md:h-48" />
+              </div>
+            )}
+
+            <div>
+              <label className="mb-1 block text-sm font-medium text-[#003049]">Schedule At (optional)</label>
+              <input
+                type="datetime-local"
+                value={scheduledAt}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => setScheduledAt(e.target.value)}
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[#669bbc] focus:outline-none focus:ring-2 focus:ring-[#669bbc]/30"
+              />
+            </div>
+
+            <div className="flex items-end gap-2">
+              <button
+                type="button"
+                onClick={handlePostNow}
+                disabled={actionLoading || !selectedFestivalId}
+                className="inline-flex flex-1 items-center justify-center rounded-lg bg-[#003049] px-4 py-2 text-sm font-medium text-white hover:bg-[#00243a] disabled:opacity-60"
+              >
+                {actionLoading ? 'Working...' : 'Post Now'}
+              </button>
+              <button
+                type="button"
+                onClick={handleSchedulePost}
+                disabled={actionLoading || !selectedFestivalId}
+                className="inline-flex flex-1 items-center justify-center rounded-lg bg-[#669bbc] px-4 py-2 text-sm font-medium text-white hover:bg-[#4f89aa] disabled:opacity-60"
+              >
+                {actionLoading ? 'Working...' : 'Schedule'}
+              </button>
+            </div>
+          </div>
+
+          {actionMessage && <p className="mt-3 text-sm text-green-700">{actionMessage}</p>}
+        </section>
+
         <section className="rounded-3xl border border-white/40 bg-white/90 p-6 shadow-elegant backdrop-blur-sm">
           <div className="mb-6 flex items-center gap-3 border-b border-gray-100 pb-4">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#003049] to-[#669bbc] text-white shadow-md">
@@ -389,7 +607,7 @@ export const HomePage = () => {
                       </p>
                     </div>
                     {festival?.date && (
-                      <span className={`rounded-full px-2 py-1 text-xs font-mediu${
+                      <span className={`rounded-full px-2 py-1 text-xs font-medium ${
                         isToday ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
                       }`}>
                         {isToday ? 'Today' : `${daysUntil} days`}

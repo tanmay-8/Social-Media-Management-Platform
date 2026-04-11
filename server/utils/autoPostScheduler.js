@@ -5,6 +5,7 @@ const User = require('../models/User');
 const { composeAndUpload } = require('./composer');
 const { postToInstagram } = require('./instagramAPI');
 const { postToFacebook, getUserPages, getPageAccessToken } = require('./facebookAPI');
+const { resolveFestivalBaseImage } = require('./festivalHelpers');
 
 /**
  * Auto-posting scheduler
@@ -54,8 +55,15 @@ async function processScheduledPost(scheduledPost) {
             return;
         }
 
+        const resolvedImage = scheduledPost.resolvedBaseImageUrl
+            ? {
+                  id: scheduledPost.selectedBaseImageId || null,
+                  url: scheduledPost.resolvedBaseImageUrl,
+              }
+            : resolveFestivalBaseImage(festival, scheduledPost.selectedBaseImageId);
+
         // Check if festival has base image
-        if (!festival.baseImage?.url) {
+        if (!resolvedImage.url) {
             console.error('❌ Festival has no base image');
             scheduledPost.status = 'failed';
             scheduledPost.result = { error: 'Festival has no base image' };
@@ -66,7 +74,7 @@ async function processScheduledPost(scheduledPost) {
         // Step 1: Compose the image
         console.log('🎨 Composing image...');
         const composedImage = await composeAndUpload(
-            festival.baseImage.url,
+            resolvedImage.url,
             user.profile.footerImage.url,
             { width: 1080, height: 1080 }
         );
@@ -230,6 +238,8 @@ async function processScheduledPost(scheduledPost) {
         }
 
         scheduledPost.attempts = (scheduledPost.attempts || 0) + 1;
+        scheduledPost.selectedBaseImageId = resolvedImage.id || scheduledPost.selectedBaseImageId || null;
+        scheduledPost.resolvedBaseImageUrl = resolvedImage.url;
         await scheduledPost.save();
 
     } catch (error) {
@@ -270,12 +280,19 @@ async function checkAndPostScheduled() {
 
         console.log(`📋 Found ${pendingPosts.length} pending post(s) to process`);
 
-        // Process each post
-        for (const post of pendingPosts) {
-            await processScheduledPost(post);
-            // Small delay between posts to avoid rate limiting
-            await new Promise(resolve => setTimeout(resolve, 2000));
-        }
+        // Process posts with controlled parallelism
+        const { default: pLimit } = await import('p-limit');
+        const limit = pLimit(2); // max 2 concurrent posts
+
+        await Promise.all(
+            pendingPosts.map(post =>
+                limit(async () => {
+                    await processScheduledPost(post);
+                    // Small delay between posts per thread to avoid rate limiting
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                })
+            )
+        );
 
         console.log(`\n✅ Finished processing ${pendingPosts.length} post(s)\n`);
 
@@ -292,11 +309,11 @@ async function checkAndPostScheduled() {
  */
 function startScheduler() {
     console.log('🚀 Starting auto-posting scheduler (IST timezone)...');
-    console.log('⏰ Will check for scheduled posts every hour (IST)');
+    console.log('⏰ Will check for scheduled posts every 5 minutes (IST)');
 
-    // Run every hour at minute 0 (e.g., 1:00, 2:00, 3:00) in IST
+    // Run every 5 minutes in IST
     // Cron format: minute hour day month dayOfWeek
-    cron.schedule('0 * * * *', async () => {
+    cron.schedule('*/5 * * * *', async () => {
         await checkAndPostScheduled();
     }, {
         timezone: 'Asia/Kolkata'
