@@ -1,9 +1,9 @@
 import { useAppStore, type AppState } from '../store';
 import { Calendar, Loader2, Clock, AlertCircle, Download, CheckCircle2, Sparkles, ArrowRight, ShieldCheck } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { festivalService } from '../services/festivalService';
-import { scheduledService, type PostedPost } from '../services/scheduledService';
+import { scheduledService, type PostedPost, type ScheduledPost } from '../services/scheduledService';
 import { subscriptionService } from '../services/subscriptionService';
 import type { Festival } from '../types';
 
@@ -13,6 +13,7 @@ export const HomePage = () => {
   const setSubscription = useAppStore((s: AppState & { setSubscription: (subscription: AppState['subscription']) => void }) => s.setSubscription);
   const navigate = useNavigate();
   const [festivals, setFestivals] = useState<Festival[]>([]);
+  const [scheduledPosts, setScheduledPosts] = useState<ScheduledPost[]>([]);
   const [postedPosts, setPostedPosts] = useState<PostedPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -75,14 +76,45 @@ export const HomePage = () => {
   };
 
   const fetchData = async () => {
-    const [festivalsData, postedPostsData] = await Promise.all([
+    const [festivalsData, scheduledPostsData, postedPostsData] = await Promise.all([
       festivalService.getAllFestivals(),
+      scheduledService.getScheduledPosts(),
       scheduledService.getPostedPosts(),
     ]);
 
     setFestivals(festivalsData.festivals || []);
+    setScheduledPosts(scheduledPostsData.posts || []);
     setPostedPosts(postedPostsData.posts || []);
   };
+
+  const selectedImageByFestival = useMemo(() => {
+    const byFestival = new Map<string, string>();
+
+    const priority = (status: ScheduledPost['status']) => {
+      if (status === 'pending') return 0;
+      if (status === 'failed') return 1;
+      if (status === 'skipped') return 2;
+      if (status === 'posted') return 3;
+      return 4;
+    };
+
+    const ordered = [...scheduledPosts].sort((left, right) => {
+      const statusDiff = priority(left.status) - priority(right.status);
+      if (statusDiff !== 0) return statusDiff;
+      return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
+    });
+
+    ordered.forEach((post) => {
+      const festivalId = post.festival?._id;
+      if (!festivalId || byFestival.has(festivalId)) return;
+
+      if (post.resolvedBaseImageUrl) {
+        byFestival.set(festivalId, post.resolvedBaseImageUrl);
+      }
+    });
+
+    return byFestival;
+  }, [scheduledPosts]);
 
   const handleDownloadPostedImage = async (post: PostedPost) => {
     if (!post.imageUrl) return;
@@ -226,7 +258,7 @@ export const HomePage = () => {
                   ? Math.max(0, Math.ceil((new Date(festival.date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
                   : 0;
                 const isToday = daysUntil === 0;
-                const previewImage = festival.baseImage?.url || festival.baseImages?.[0]?.url;
+                const previewImage = selectedImageByFestival.get(festival._id) || festival.baseImage?.url || festival.baseImages?.[0]?.url;
 
                 return (
                   <article
