@@ -6,14 +6,15 @@ import AdminLayout from './layouts/AdminLayout';
 import { LoginPage } from './pages/LoginPage';
 import { SignupPage } from './pages/SignupPage';
 import { AuthCallbackPage } from './pages/AuthCallbackPage';
-import { HomePage } from './pages/HomePage';
+import { HomePage } from './pages/HomePage.tsx';
+import { FestivalBaseImagePage } from './pages/FestivalBaseImagePage';
 import { ProfilePage } from './pages/ProfilePage';
 import { SubscriptionPage } from './pages/SubscriptionPage';
 import { TermsOfServicePage } from './pages/TermsOfServicePage';
 import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminUsers from './pages/AdminUsers';
-import AdminFestivals from './pages/AdminFestivals';
+import AdminFestivals from './pages/AdminFestivals.tsx';
 import AdminSettings from './pages/AdminSettings';
 import AdminRoute from './components/AdminRoute';
 
@@ -40,6 +41,7 @@ const App = () => {
         }
       >
         <Route path="/" element={<HomePage />} />
+        <Route path="/festival/:festivalId" element={<FestivalBaseImagePage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/subscription" element={<SubscriptionPage />} />
       </Route>
