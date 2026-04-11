@@ -18,7 +18,7 @@ export const MainLayout = () => {
 
   return (
     <div className="flex h-full w-full flex-col">
-      <header className="flex items-center justify-between border-b border-white/10 bg-gradient-to-r from-[#003049] via-[#002139] to-[#00182a] px-6 py-4 shadow-lg backdrop-blur-sm">
+      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-white/10 bg-gradient-to-r from-[#003049] via-[#002139] to-[#00182a] px-6 py-4 shadow-lg backdrop-blur-sm">
         <div className="flex cursor-pointer items-center gap-3 transition-transform hover:scale-105" onClick={() => navigate('/')}>
           <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#c1121f] to-[#780000] shadow-lg ring-2 ring-white/20">
             <Sparkles className="h-5 w-5 text-white" />
@@ -48,7 +48,9 @@ export const MainLayout = () => {
       </header>
 
       <main className="flex-1 overflow-auto bg-gradient-cream p-6 md:p-8">
-        <Outlet />
+        <div className="mx-auto w-full max-w-7xl">
+          <Outlet />
+        </div>
       </main>
 
       <footer className="border-t border-gray-200 bg-white px-6 py-4">

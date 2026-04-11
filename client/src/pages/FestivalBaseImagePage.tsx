@@ -1,4 +1,4 @@
-import { ArrowLeft, Calendar, CheckCircle2, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { ArrowLeft, Calendar, CheckCircle2, Image as ImageIcon, Loader2, Check, Sparkles } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { festivalService } from '../services/festivalService';
@@ -70,6 +70,11 @@ export const FestivalBaseImagePage = () => {
     return [] as Array<{ _id?: string; url: string; public_id: string }>;
   }, [festival]);
 
+  const selectedImage = useMemo(() => {
+    if (!selectedBaseImageId) return availableImages[0] || null;
+    return availableImages.find((image) => String(image._id || image.public_id) === selectedBaseImageId) || availableImages[0] || null;
+  }, [availableImages, selectedBaseImageId]);
+
   const handleUseSelectedImage = async () => {
     if (!festival) return;
 
@@ -136,7 +141,7 @@ export const FestivalBaseImagePage = () => {
         <div className="mb-5 flex items-start justify-between gap-3 border-b border-gray-100 pb-4">
           <div>
             <h1 className="text-2xl font-bold text-[#003049]">{festival.name}</h1>
-            <p className="mt-1 text-sm text-[#669bbc]">Select the base image for this upcoming festival.</p>
+            <p className="mt-1 text-sm text-[#669bbc]">Select a base image and we will use it for the scheduled festival post.</p>
           </div>
           <div className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">
             <Calendar className="h-3 w-3" />
@@ -161,39 +166,80 @@ export const FestivalBaseImagePage = () => {
             <p>No base image configured for this festival yet.</p>
           </div>
         ) : (
-          <>
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-              {availableImages.map((image) => {
-                const imageId = String(image._id || image.public_id);
-                const isSelected = selectedBaseImageId === imageId;
-                return (
-                  <button
-                    key={`${image.public_id}-${imageId}`}
-                    type="button"
-                    onClick={() => setSelectedBaseImageId(imageId)}
-                    className={`overflow-hidden rounded-xl border transition ${
-                      isSelected ? 'border-[#003049] ring-2 ring-[#669bbc]/40' : 'border-slate-200 hover:border-[#669bbc]'
-                    }`}
-                  >
-                    <img src={image.url} alt="Festival base" className="h-28 w-full object-cover" />
-                  </button>
-                );
-              })}
-            </div>
+          <div className="grid gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+            <section className="rounded-2xl border border-slate-200 bg-linear-to-br from-white to-[#f8fbff] p-4">
+              <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-[#669bbc]">Selected Preview</p>
+              {selectedImage ? (
+                <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+                  <img src={selectedImage.url} alt={`${festival.name} selected base`} className="h-64 w-full object-cover md:h-80" />
+                </div>
+              ) : (
+                <div className="flex h-64 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-400 md:h-80">
+                  <ImageIcon className="h-8 w-8" />
+                </div>
+              )}
 
-            <div className="mt-5 flex flex-wrap items-center gap-3">
+              <div className="mt-3 flex items-center justify-between text-xs">
+                <span className="rounded-full bg-[#003049]/10 px-2.5 py-1 font-medium text-[#003049]">{availableImages.length} options available</span>
+                <span className="text-[#7f7270]">{festival.defaultBaseImageId ? 'Default image set by admin' : 'Default uses first image'}</span>
+              </div>
+            </section>
+
+            <section>
+              <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-[#669bbc]">Choose Base Image</p>
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-2">
+                {availableImages.map((image) => {
+                  const imageId = String(image._id || image.public_id);
+                  const isSelected = selectedBaseImageId === imageId;
+                  const isDefault = festival.defaultBaseImageId && String(festival.defaultBaseImageId) === imageId;
+
+                  return (
+                    <button
+                      key={`${image.public_id}-${imageId}`}
+                      type="button"
+                      onClick={() => setSelectedBaseImageId(imageId)}
+                      className={`group relative overflow-hidden rounded-xl border transition ${
+                        isSelected ? 'border-[#003049] ring-2 ring-[#669bbc]/45' : 'border-slate-200 hover:border-[#669bbc]'
+                      }`}
+                    >
+                      <img src={image.url} alt="Festival base" className="h-28 w-full object-cover" />
+                      <div className="absolute inset-0 bg-linear-to-t from-black/40 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+                      {isDefault && (
+                        <span className="absolute left-2 top-2 rounded-full bg-white/95 px-2 py-0.5 text-[10px] font-semibold text-[#003049]">
+                          Default
+                        </span>
+                      )}
+                      {isSelected && (
+                        <span className="absolute right-2 top-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#003049] text-white shadow">
+                          <Check className="h-3.5 w-3.5" />
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="mt-5 rounded-xl border border-[#669bbc]/25 bg-[#f6fbff] p-3 text-xs text-[#335d74]">
+                <p className="m-0">Tip: this selection is used for the scheduled post image composition for this festival date.</p>
+              </div>
+            </section>
+
+            <div className="lg:col-span-2 mt-1 flex flex-wrap items-center gap-3 border-t border-slate-100 pt-4">
               <button
                 type="button"
                 onClick={handleUseSelectedImage}
-                disabled={saving}
-                className="inline-flex items-center gap-2 rounded-lg bg-[#003049] px-5 py-2.5 text-sm font-medium text-white hover:bg-[#00243a] disabled:opacity-60"
+                disabled={saving || !selectedImage}
+                className="inline-flex items-center gap-2 rounded-lg bg-[#003049] px-5 py-2.5 text-sm font-medium text-white hover:bg-[#00243a] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                Use This Image
+                {saving ? 'Scheduling...' : 'Use This Image'}
               </button>
-              <p className="text-xs text-slate-500">This schedules your upcoming festival post using the selected image.</p>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#c1121f]/10 px-3 py-1 text-xs font-medium text-[#780000]">
+                <Sparkles className="h-3.5 w-3.5" />
+                Final post can be viewed later in Posted Posts
+              </span>
             </div>
-          </>
+          </div>
         )}
       </div>
     </div>
