@@ -28,8 +28,12 @@ export const FestivalBaseImagePage = () => {
       setError(null);
 
       try {
-        const response = await festivalService.getAllFestivals();
-        const found = (response.festivals || []).find((item) => item._id === festivalId) || null;
+        const [festivalResponse, scheduledResponse] = await Promise.all([
+          festivalService.getAllFestivals(),
+          scheduledService.getScheduledPosts(),
+        ]);
+
+        const found = (festivalResponse.festivals || []).find((item) => item._id === festivalId) || null;
         if (!found) {
           setError('Festival not found');
           setFestival(null);
@@ -39,10 +43,19 @@ export const FestivalBaseImagePage = () => {
 
         setFestival(found);
 
+        const scheduledForFestival = (scheduledResponse.posts || [])
+          .filter((post) => post.festival?._id === festivalId)
+          .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime());
+
+        const preferredScheduled =
+          scheduledForFestival.find((post) => ['pending', 'failed', 'skipped'].includes(post.status)) ||
+          scheduledForFestival[0];
+
+        const selectedFromUser = preferredScheduled?.selectedBaseImageId ? String(preferredScheduled.selectedBaseImageId) : '';
         const firstBaseImage = found.baseImages?.[0];
         const firstImageId = firstBaseImage ? String(firstBaseImage._id || firstBaseImage.public_id || '') : '';
         const defaultId = found.defaultBaseImageId ? String(found.defaultBaseImageId) : '';
-        setSelectedBaseImageId(defaultId || firstImageId);
+        setSelectedBaseImageId(selectedFromUser || defaultId || firstImageId);
       } catch (loadError) {
         const message = loadError instanceof Error ? loadError.message : 'Failed to load festival';
         setError(message);
